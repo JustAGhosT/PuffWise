@@ -25,7 +25,11 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  output: 'export',
   reactCompiler: true,
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default withPWA(nextConfig);

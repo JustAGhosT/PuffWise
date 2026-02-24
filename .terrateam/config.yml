@@ -1,0 +1,76 @@
+# Terrateam configuration
+# Docs: https://docs.terrateam.io/configuration
+# Terrateam runs terraform plan on PRs and apply on merge via GitHub Actions.
+
+when_modified:
+  file_patterns:
+    - 'infra/**'
+
+dirs:
+  infra/terragrunt/dev:
+    tags:
+      - dev
+    when_modified:
+      file_patterns:
+        - 'infra/terraform/**'
+        - 'infra/terragrunt/dev/**'
+        - 'infra/terragrunt/terragrunt.hcl'
+
+  infra/terragrunt/staging:
+    tags:
+      - staging
+    when_modified:
+      file_patterns:
+        - 'infra/terraform/**'
+        - 'infra/terragrunt/staging/**'
+        - 'infra/terragrunt/terragrunt.hcl'
+
+  infra/terragrunt/prod:
+    tags:
+      - prod
+    when_modified:
+      file_patterns:
+        - 'infra/terraform/**'
+        - 'infra/terragrunt/prod/**'
+        - 'infra/terragrunt/terragrunt.hcl'
+
+workflows:
+  - tag_query: dev
+    plan:
+      - type: init
+        extra_args:
+          - '-upgrade'
+      - type: plan
+    apply:
+      - type: init
+      - type: apply
+
+  - tag_query: staging
+    plan:
+      - type: init
+        extra_args:
+          - '-upgrade'
+      - type: plan
+    apply:
+      - type: init
+      - type: apply
+
+  - tag_query: prod
+    plan:
+      - type: init
+        extra_args:
+          - '-upgrade'
+      - type: plan
+    apply:
+      - type: init
+      - type: apply
+
+# Use terragrunt as the engine
+engine:
+  name: terragrunt
+  version: '0.68'
+
+# Cost estimation (optional, requires Infracost API key)
+# cost_estimation:
+#   enabled: true
+#   provider: infracost

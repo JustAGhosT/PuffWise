@@ -21,9 +21,11 @@ export interface Challenge {
   id?: number;
   type: 'streak' | 'target';
   status: 'active' | 'completed' | 'failed';
+  productType?: string;
+  dailyLimit?: number;
   startDate: string;
   targetDate?: string;
-  linkedLogIds: number[];
+  linkedLogIds?: number[];
 }
 
 class PuffWiseDB extends Dexie {
@@ -72,6 +74,32 @@ export async function deleteLogEvent(id: number): Promise<void> {
 
 export async function getAllLogEvents(): Promise<LogEvent[]> {
   return db.logEvents.orderBy('timestamp').reverse().toArray();
+}
+
+export async function addChallenge(challenge: Omit<Challenge, 'id'>): Promise<number> {
+  return db.challenges.add(challenge) as Promise<number>;
+}
+
+export async function getActiveChallenges(): Promise<Challenge[]> {
+  return db.challenges.where('status').equals('active').toArray();
+}
+
+export async function getChallengeById(id: number): Promise<Challenge | undefined> {
+  return db.challenges.get(id);
+}
+
+export async function completeChallenge(id: number): Promise<void> {
+  const updated = await db.challenges.update(id, { status: 'completed' });
+  if (updated === 0) throw new Error(`Challenge ${id} not found`);
+}
+
+export async function failChallenge(id: number): Promise<void> {
+  const updated = await db.challenges.update(id, { status: 'failed' });
+  if (updated === 0) throw new Error(`Challenge ${id} not found`);
+}
+
+export async function getAllChallenges(): Promise<Challenge[]> {
+  return db.challenges.toArray();
 }
 
 export async function clearAllData(): Promise<void> {
