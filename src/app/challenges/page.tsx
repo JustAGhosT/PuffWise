@@ -229,6 +229,7 @@ export default function ChallengesPage() {
                       size="sm"
                       variant="outline"
                       className="text-emerald-600"
+                      aria-label="Mark challenge complete"
                       onClick={() => { if (c.id != null) handleComplete(c.id); }}
                     >
                       <Check className="h-4 w-4" />
@@ -237,6 +238,7 @@ export default function ChallengesPage() {
                       size="sm"
                       variant="outline"
                       className="text-red-500"
+                      aria-label="Mark challenge failed"
                       onClick={() => { if (c.id != null) handleFail(c.id); }}
                     >
                       <X className="h-4 w-4" />
