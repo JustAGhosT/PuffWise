@@ -1,0 +1,10 @@
+repoName: PuffWise
+defaultBranch: main
+primaryStack: node
+windowsFirst: true
+renderTargets:
+  - claude
+  - cursor
+  - windsurf
+  - copilot
+  - ai
