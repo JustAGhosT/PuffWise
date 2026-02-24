@@ -117,3 +117,4 @@ pnpm-debug.log*
 # Agent state files
 # =============================================================================
 .claude/state/
+package-lock.json
