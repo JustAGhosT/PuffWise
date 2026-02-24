@@ -1,8 +1,14 @@
 import {
+  addChallenge,
   addLogEvent,
   clearAllData,
+  completeChallenge,
   deleteLogEvent,
+  failChallenge,
+  getActiveChallenges,
+  getAllChallenges,
   getAllLogEvents,
+  getChallengeById,
   getLogEventsForDate,
   getRecentLogEvents,
 } from '@/lib/db';
@@ -81,5 +87,94 @@ describe('db — logEvents CRUD', () => {
 
     const all = await getAllLogEvents();
     expect(all).toHaveLength(0);
+  });
+});
+
+describe('db — challenges CRUD', () => {
+  it('adds a challenge and retrieves it', async () => {
+    const id = await addChallenge({
+      type: 'target',
+      status: 'active',
+      productType: 'cigarette',
+      dailyLimit: 5,
+      startDate: '2026-02-24',
+      targetDate: '2026-03-24',
+      linkedLogIds: [],
+    });
+    expect(id).toBeGreaterThan(0);
+
+    const challenge = await getChallengeById(id);
+    expect(challenge).toBeDefined();
+    expect(challenge!.type).toBe('target');
+    expect(challenge!.dailyLimit).toBe(5);
+  });
+
+  it('retrieves only active challenges', async () => {
+    await addChallenge({
+      type: 'target',
+      status: 'active',
+      startDate: '2026-02-24',
+      linkedLogIds: [],
+    });
+    await addChallenge({
+      type: 'streak',
+      status: 'completed',
+      startDate: '2026-02-20',
+      linkedLogIds: [],
+    });
+
+    const active = await getActiveChallenges();
+    expect(active).toHaveLength(1);
+    expect(active[0].type).toBe('target');
+  });
+
+  it('completes a challenge', async () => {
+    const id = await addChallenge({
+      type: 'target',
+      status: 'active',
+      startDate: '2026-02-24',
+      linkedLogIds: [],
+    });
+    await completeChallenge(id);
+
+    const challenge = await getChallengeById(id);
+    expect(challenge!.status).toBe('completed');
+  });
+
+  it('fails a challenge', async () => {
+    const id = await addChallenge({
+      type: 'streak',
+      status: 'active',
+      startDate: '2026-02-24',
+      linkedLogIds: [],
+    });
+    await failChallenge(id);
+
+    const challenge = await getChallengeById(id);
+    expect(challenge!.status).toBe('failed');
+  });
+
+  it('retrieves all challenges regardless of status', async () => {
+    await addChallenge({
+      type: 'target',
+      status: 'active',
+      startDate: '2026-02-24',
+      linkedLogIds: [],
+    });
+    await addChallenge({
+      type: 'streak',
+      status: 'completed',
+      startDate: '2026-02-20',
+      linkedLogIds: [],
+    });
+    await addChallenge({
+      type: 'target',
+      status: 'failed',
+      startDate: '2026-02-18',
+      linkedLogIds: [],
+    });
+
+    const all = await getAllChallenges();
+    expect(all).toHaveLength(3);
   });
 });

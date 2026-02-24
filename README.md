@@ -26,28 +26,47 @@ A privacy-first, browser-based nicotine usage tracking platform that empowers us
 git clone https://github.com/JustAGhosT/PuffWise.git
 cd PuffWise
 
-# AgentKit tooling (the app scaffold is not yet created)
+# Install dependencies
+pnpm install
+
+# Start the dev server
+pnpm dev
+
+# Run tests
+pnpm test
+
+# Type-check and lint
+pnpm typecheck
+pnpm lint
+
+# Production build
+pnpm build
+```
+
+### AgentKit Tooling
+
+```bash
 cd .agentkit
 pnpm install
 pnpm test
 ```
 
-> **Note:** The application source code does not exist yet. The repo currently
-> contains AgentKit Forge tooling, documentation, and agent configuration.
-> See the [PRD](docs/01_product/01_product_requirements.md) for the planned
-> tech stack and feature set.
-
 ## Project Structure
 
 ```text
 PuffWise/
+├── src/
+│   ├── app/             # Next.js pages (dashboard, history, challenges, settings)
+│   ├── components/      # UI components (log form, daily summary, streak, etc.)
+│   └── lib/             # DB (Dexie/IndexedDB), hooks, crypto, export utils
+├── public/              # PWA manifest, icons
+├── docs/                # Product documentation (PRD, specs, architecture)
 ├── .agentkit/           # AgentKit Forge engine + CLI
 │   ├── bin/             # Cross-platform CLI scripts
 │   ├── engines/node/    # Sync engine, orchestrator, runners
 │   └── spec/            # YAML spec files (agents, commands, teams)
-├── docs/                # Product documentation (PRD, specs, architecture)
 ├── .github/workflows/   # CI pipelines
-└── .claude/commands/    # Orchestrator command files
+└── .claude/             # Orchestrator state + command files
 ```
 
 ## Documentation
@@ -56,11 +75,13 @@ PuffWise/
 - [AgentKit Architecture](.agentkit/docs/ARCHITECTURE.md)
 - [CLI Installation](.agentkit/docs/CLI_INSTALLATION.md)
 
-## Tech Stack (Planned)
+## Tech Stack
 
-- **Frontend:** Next.js + TypeScript + Tailwind CSS
-- **Runtime:** PWA-ready, offline-first
-- **Tooling:** AgentKit Forge, pnpm, Vitest, GitHub Actions
+- **Frontend:** Next.js 16 + TypeScript 5.9 + Tailwind CSS 4
+- **Storage:** Dexie.js (IndexedDB) — offline-first, no backend
+- **Runtime:** PWA with service worker (offline caching)
+- **Testing:** Vitest 4 + Testing Library + fake-indexeddb
+- **Tooling:** AgentKit Forge, pnpm, GitHub Actions
 
 ## Contributing
 

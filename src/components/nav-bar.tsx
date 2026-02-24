@@ -1,12 +1,13 @@
 'use client';
 
+import { cn } from '@/lib/utils';
+import { Clock, LayoutDashboard, Settings, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Clock, Settings } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/challenges', label: 'Challenges', icon: Trophy },
   { href: '/history', label: 'History', icon: Clock },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];

@@ -1,20 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, Upload, Trash2, Info } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
-import { getAllLogEvents, clearAllData, db } from '@/lib/db';
+import { clearAllData, db, getAllLogEvents } from '@/lib/db';
+import { exportLogsToCSV } from '@/lib/export';
+import { Download, Info, Trash2, Upload } from 'lucide-react';
+import { useState } from 'react';
 
 export default function SettingsPage() {
   const [importing, setImporting] = useState(false);
@@ -22,7 +23,11 @@ export default function SettingsPage() {
 
   const handleExport = async () => {
     const logs = await getAllLogEvents();
-    const data = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), logs }, null, 2);
+    const data = JSON.stringify(
+      { version: 1, exportedAt: new Date().toISOString(), logs },
+      null,
+      2
+    );
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -90,9 +95,14 @@ export default function SettingsPage() {
             Download all your usage data as a JSON file. Data never leaves your device unless you
             choose to export it.
           </p>
-          <Button onClick={handleExport} variant="outline">
-            Export JSON
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleExport} variant="outline">
+              Export JSON
+            </Button>
+            <Button onClick={exportLogsToCSV} variant="outline">
+              Export CSV
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
