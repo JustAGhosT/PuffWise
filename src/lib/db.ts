@@ -25,7 +25,7 @@ export interface Challenge {
   dailyLimit?: number;
   startDate: string;
   targetDate?: string;
-  linkedLogIds: number[];
+  linkedLogIds?: number[];
 }
 
 class PuffWiseDB extends Dexie {
