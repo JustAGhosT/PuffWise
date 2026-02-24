@@ -38,9 +38,9 @@ jobs:
         id: changes
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            CHANGED=$(git diff --name-only HEAD~1 HEAD -- infra/ | grep -oP 'terragrunt/\K(dev|staging|prod)' | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- infra/ | { grep -oP 'terragrunt/\K(dev|staging|prod)' || true; } | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
           else
-            CHANGED=$(git diff --name-only origin/main...HEAD -- infra/ | grep -oP 'terragrunt/\K(dev|staging|prod)' | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            CHANGED=$(git diff --name-only origin/main...HEAD -- infra/ | { grep -oP 'terragrunt/\K(dev|staging|prod)' || true; } | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
           fi
           # If root terraform modules changed, all envs are affected
           if [ "${{ github.event_name }}" = "push" ]; then

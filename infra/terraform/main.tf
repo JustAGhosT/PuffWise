@@ -23,7 +23,7 @@ module "static_web_app" {
   sku_tier            = var.swa_sku_tier
   sku_size            = var.swa_sku_size
   custom_domain       = var.custom_domain
-  enable_managed_identity = var.environment == "prod"
+  enable_managed_identity = var.enable_managed_identity
   tags                = local.tags
 }
 

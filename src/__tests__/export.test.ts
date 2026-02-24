@@ -28,6 +28,18 @@ describe('logsToCSV', () => {
     expect(csv).toContain('"said ""hello, world"""');
   });
 
+  it('prevents CSV/formula injection by prefixing dangerous values with a single quote', () => {
+    const dangerous = ['=SUM(A1)', '+cmd', '-cmd', '@SUM', '=1+2'];
+    for (const note of dangerous) {
+      const csv = logsToCSV([
+        { productType: 'cigarette', amount: 1, timestamp: '2026-02-24T09:00:00', notes: note },
+      ]);
+      // The injected value should not appear raw; it should be single-quote-prefixed
+      expect(csv).not.toContain(`,${note}`);
+      expect(csv).toContain("'" + note);
+    }
+  });
+
   it('handles unknown product types gracefully', () => {
     const csv = logsToCSV([
       { productType: 'unknown-thing', amount: 1, timestamp: '2026-02-24T08:00:00' },
