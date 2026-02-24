@@ -1,24 +1,29 @@
 'use client';
 
-import { Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { LogEvent } from '@/lib/db';
+import { Zap } from 'lucide-react';
 
 interface StreakIndicatorProps {
   logs: LogEvent[];
+}
+
+function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function StreakIndicator({ logs }: StreakIndicatorProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const logDates = new Set(
-    logs.map((l) => new Date(l.timestamp).toISOString().slice(0, 10))
-  );
+  const logDates = new Set(logs.map((l) => toLocalDateStr(new Date(l.timestamp))));
 
   let streak = 0;
   const d = new Date(today);
-  while (logDates.has(d.toISOString().slice(0, 10))) {
+  while (logDates.has(toLocalDateStr(d))) {
     streak++;
     d.setDate(d.getDate() - 1);
   }
