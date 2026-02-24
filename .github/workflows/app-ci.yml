@@ -1,0 +1,60 @@
+# App CI — PuffWise
+# Activate by uncommenting the 'on' triggers once app source code exists.
+# Expects: package.json at repo root with build/lint/test scripts.
+name: App CI
+
+# Uncomment when app code lands:
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'src/**'
+#       - 'package.json'
+#       - 'tsconfig.json'
+#       - 'next.config.*'
+#   pull_request:
+#     branches: [main]
+#     paths:
+#       - 'src/**'
+#       - 'package.json'
+#       - 'tsconfig.json'
+#       - 'next.config.*'
+
+on: workflow_dispatch
+
+jobs:
+  build-and-test:
+    name: Build, Lint & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm tsc --noEmit
+
+      - name: Unit tests
+        run: pnpm test -- --coverage
+
+      - name: Build
+        run: pnpm build
