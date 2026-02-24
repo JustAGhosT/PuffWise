@@ -75,8 +75,8 @@ jobs:
 
       - name: Setup Terragrunt
         run: |
-          curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64" -o /usr/local/bin/terragrunt
-          chmod +x /usr/local/bin/terragrunt
+          sudo curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64" -o /usr/local/bin/terragrunt
+          sudo chmod +x /usr/local/bin/terragrunt
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -132,8 +132,8 @@ jobs:
 
       - name: Setup Terragrunt
         run: |
-          curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64" -o /usr/local/bin/terragrunt
-          chmod +x /usr/local/bin/terragrunt
+          sudo curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64" -o /usr/local/bin/terragrunt
+          sudo chmod +x /usr/local/bin/terragrunt
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
