@@ -19,8 +19,9 @@ export function logsToCSV(
   const header = 'Date,Time,Product,Amount,Unit,Notes';
   const rows = logs.map((log) => {
     const dt = new Date(log.timestamp);
-    const date = dt.toISOString().slice(0, 10);
-    const time = dt.toISOString().slice(11, 19);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const date = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+    const time = `${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
     const product = getProductById(log.productType);
     const name = product?.name ?? log.productType;
     const unit = product?.unit ?? '';

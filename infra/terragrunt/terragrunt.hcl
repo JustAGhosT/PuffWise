@@ -3,7 +3,7 @@
 
 locals {
   # Parse the environment from the directory path
-  env_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  env_vars = read_terragrunt_config("${get_original_terragrunt_dir()}/env.hcl")
   environment = local.env_vars.locals.environment
   location    = local.env_vars.locals.location
 }

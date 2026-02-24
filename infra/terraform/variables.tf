@@ -1,6 +1,11 @@
 variable "subscription_id" {
   description = "Azure subscription ID for the azurerm provider"
   type        = string
+
+  validation {
+    condition     = length(var.subscription_id) > 0
+    error_message = "subscription_id must not be empty. Set ARM_SUBSCRIPTION_ID environment variable."
+  }
 }
 
 variable "project" {

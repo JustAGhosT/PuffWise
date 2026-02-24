@@ -75,8 +75,12 @@ jobs:
 
       - name: Setup Terragrunt
         run: |
-          sudo curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64" -o /usr/local/bin/terragrunt
-          sudo chmod +x /usr/local/bin/terragrunt
+          TG_VERSION="${{ env.TG_VERSION }}"
+          curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64" -o /tmp/terragrunt
+          curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/SHA256SUMS" -o /tmp/SHA256SUMS
+          echo "$(grep terragrunt_linux_amd64 /tmp/SHA256SUMS | cut -d' ' -f1) /tmp/terragrunt" | sha256sum -c -
+          chmod +x /tmp/terragrunt
+          sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -113,7 +117,7 @@ jobs:
   apply:
     name: Apply (${{ matrix.env }})
     needs: [detect-changes, plan]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.envs != '[]'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -132,8 +136,12 @@ jobs:
 
       - name: Setup Terragrunt
         run: |
-          sudo curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64" -o /usr/local/bin/terragrunt
-          sudo chmod +x /usr/local/bin/terragrunt
+          TG_VERSION="${{ env.TG_VERSION }}"
+          curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64" -o /tmp/terragrunt
+          curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/SHA256SUMS" -o /tmp/SHA256SUMS
+          echo "$(grep terragrunt_linux_amd64 /tmp/SHA256SUMS | cut -d' ' -f1) /tmp/terragrunt" | sha256sum -c -
+          chmod +x /tmp/terragrunt
+          sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
