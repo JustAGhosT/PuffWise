@@ -56,10 +56,24 @@ describe('runHealthcheck()', () => {
     expect(result.tools.length).toBeGreaterThan(0);
   });
 
-  it('detects node and git as installed tools', { timeout: 30_000 }, async () => {
+  it('detects node and git as installed tools', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    // Mock process spawns to avoid Windows shell:true timeouts.
+    // Return realistic values for node/git, false for others.
+    vi.spyOn(runner, 'commandExists').mockImplementation(
+      (cmd) => cmd === 'node' || cmd === 'git',
+    );
+    vi.spyOn(runner, 'execCommand').mockImplementation((cmd) => {
+      if (cmd.startsWith('node')) return { exitCode: 0, stdout: 'v20.0.0\n', stderr: '', durationMs: 5 };
+      if (cmd.startsWith('git')) return { exitCode: 0, stdout: 'git version 2.43.0\n', stderr: '', durationMs: 5 };
+      return { exitCode: 0, stdout: '\n', stderr: '', durationMs: 5 };
+    });
+    vi.spyOn(orchestrator, 'loadState').mockReturnValue({});
+    vi.spyOn(orchestrator, 'saveState').mockImplementation(() => {});
+    vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
 
     const result = await runHealthcheck({
       agentkitRoot: AGENTKIT_ROOT,
@@ -77,10 +91,19 @@ describe('runHealthcheck()', () => {
     expect(gitTool.found).toBe(true);
   });
 
-  it('reports agentkit setup status', { timeout: 30_000 }, async () => {
+  it('reports agentkit setup status', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    // Mock process spawns to avoid Windows shell:true timeouts.
+    vi.spyOn(runner, 'commandExists').mockReturnValue(false);
+    vi.spyOn(runner, 'execCommand').mockReturnValue({
+      exitCode: 0, stdout: '\n', stderr: '', durationMs: 5,
+    });
+    vi.spyOn(orchestrator, 'loadState').mockReturnValue({});
+    vi.spyOn(orchestrator, 'saveState').mockImplementation(() => {});
+    vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
 
     const result = await runHealthcheck({
       agentkitRoot: AGENTKIT_ROOT,
@@ -103,6 +126,15 @@ describe('runHealthcheck()', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    // Mock process spawns to avoid Windows shell:true timeouts.
+    vi.spyOn(runner, 'commandExists').mockReturnValue(false);
+    vi.spyOn(runner, 'execCommand').mockReturnValue({
+      exitCode: 0, stdout: '\n', stderr: '', durationMs: 5,
+    });
+    vi.spyOn(orchestrator, 'loadState').mockReturnValue({});
+    vi.spyOn(orchestrator, 'saveState').mockImplementation(() => {});
+    vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
 
     const result = await runHealthcheck({
       agentkitRoot: AGENTKIT_ROOT,

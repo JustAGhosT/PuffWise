@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { runReview } from '../review-runner.mjs';
-import { mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import * as orchestrator from '../orchestrator.mjs';
+import { runReview } from '../review-runner.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEST_ROOT = resolve(__dirname, '..', '..', '..', '..', '..', '.test-review');
@@ -34,7 +35,11 @@ describe('review-runner', () => {
     it('detects AWS access keys', async () => {
       setupTestRepo();
       // Create file with fake AWS key
-      writeFileSync(resolve(TEST_ROOT, 'config.js'), 'const key = "AKIAIOSFODNN7EXAMPLE";', 'utf-8');
+      writeFileSync(
+        resolve(TEST_ROOT, 'config.js'),
+        'const key = "AKIAIOSFODNN7EXAMPLE";',
+        'utf-8'
+      );
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -45,12 +50,18 @@ describe('review-runner', () => {
       });
 
       expect(result.secrets).toBeGreaterThan(0);
-      expect(result.findings.some(f => f.type === 'secret' && f.pattern === 'AWS Key')).toBe(true);
+      expect(result.findings.some((f) => f.type === 'secret' && f.pattern === 'AWS Key')).toBe(
+        true
+      );
     });
 
     it('detects private keys', async () => {
       setupTestRepo();
-      writeFileSync(resolve(TEST_ROOT, 'key.pem'), '-----BEGIN RSA PRIVATE KEY-----\nfake', 'utf-8');
+      writeFileSync(
+        resolve(TEST_ROOT, 'key.pem'),
+        '-----BEGIN RSA PRIVATE KEY-----\nfake',
+        'utf-8'
+      );
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -61,7 +72,7 @@ describe('review-runner', () => {
       });
 
       expect(result.secrets).toBeGreaterThan(0);
-      expect(result.findings.some(f => f.pattern === 'Private Key')).toBe(true);
+      expect(result.findings.some((f) => f.pattern === 'Private Key')).toBe(true);
     });
 
     it('passes clean files', async () => {
@@ -82,9 +93,14 @@ describe('review-runner', () => {
 
   describe('path traversal protection', () => {
     it('rejects --file paths outside project root', async () => {
-      setupTestRepo();
+      // Lightweight setup — no git spawns needed since path validation
+      // happens before any git commands run.
+      if (existsSync(TEST_ROOT)) rmSync(TEST_ROOT, { recursive: true });
+      mkdirSync(STATE_DIR, { recursive: true });
+      writeFileSync(resolve(TEST_ROOT, '.agentkit-repo'), 'test-project', 'utf-8');
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
+      vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
 
       await expect(
         runReview({
@@ -179,7 +195,11 @@ describe('review-runner', () => {
   describe('TODO scanning', () => {
     it('detects TODO comments', async () => {
       setupTestRepo();
-      writeFileSync(resolve(TEST_ROOT, 'code.js'), '// TODO: fix this\n// FIXME: broken\nconst x = 1;', 'utf-8');
+      writeFileSync(
+        resolve(TEST_ROOT, 'code.js'),
+        '// TODO: fix this\n// FIXME: broken\nconst x = 1;',
+        'utf-8'
+      );
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
 

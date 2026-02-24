@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { runHandoff } from '../handoff.mjs';
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { runHandoff } from '../handoff.mjs';
+import * as orchestrator from '../orchestrator.mjs';
+import * as runner from '../runner.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const AGENTKIT_ROOT = resolve(__dirname, '..', '..', '..', '..');
@@ -41,6 +43,23 @@ function setupTestProject(stateOverrides = {}) {
   );
 }
 
+// Helper: mock git process spawns to avoid Windows shell:true timeouts.
+function mockGitSpawns() {
+  vi.spyOn(runner, 'execCommand').mockImplementation((cmd) => {
+    if (cmd.includes('rev-parse'))
+      return { exitCode: 0, stdout: 'main\n', stderr: '', durationMs: 5 };
+    if (cmd.includes('git log -1'))
+      return { exitCode: 0, stdout: 'abc1234 init\n', stderr: '', durationMs: 5 };
+    if (cmd.includes('git log -5'))
+      return { exitCode: 0, stdout: 'abc1234 init\n', stderr: '', durationMs: 5 };
+    if (cmd.includes('status --porcelain'))
+      return { exitCode: 0, stdout: '', stderr: '', durationMs: 5 };
+    if (cmd.includes('diff --stat')) return { exitCode: 0, stdout: '', stderr: '', durationMs: 5 };
+    return { exitCode: 0, stdout: '', stderr: '', durationMs: 5 };
+  });
+  vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
+}
+
 describe('runHandoff()', () => {
   beforeEach(() => {
     setupTestProject();
@@ -53,6 +72,7 @@ describe('runHandoff()', () => {
 
   it('returns structured handoff result', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
+    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -72,6 +92,7 @@ describe('runHandoff()', () => {
 
   it('generates document with expected sections', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
+    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -88,6 +109,7 @@ describe('runHandoff()', () => {
 
   it('includes active team progress in document', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
+    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -104,6 +126,7 @@ describe('runHandoff()', () => {
 
   it('includes open todo items in document', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
+    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -124,6 +147,7 @@ describe('runHandoff()', () => {
     });
 
     vi.spyOn(console, 'log').mockImplementation(() => {});
+    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -137,6 +161,7 @@ describe('runHandoff()', () => {
 
   it('saves handoff file when --save flag is set', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
+    mockGitSpawns();
 
     await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
