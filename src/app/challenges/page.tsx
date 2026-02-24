@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Trophy, Target, X, Check } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useActiveChallenges, useAllChallenges } from '@/lib/hooks/use-challenges';
 import { DEFAULT_PRODUCTS } from '@/lib/products';
 import { cn } from '@/lib/utils';
+import { Check, Plus, Target, Trophy, X } from 'lucide-react';
+import { useState } from 'react';
 
 type ChallengeType = 'target' | 'streak';
 
@@ -20,32 +20,54 @@ export default function ChallengesPage() {
   const [formProduct, setFormProduct] = useState(DEFAULT_PRODUCTS[0].id);
   const [formLimit, setFormLimit] = useState('10');
   const [formDays, setFormDays] = useState('30');
+  const [isCreating, setIsCreating] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleCreate = async () => {
-    const startDate = new Date();
-    const y = startDate.getFullYear();
-    const m = String(startDate.getMonth() + 1).padStart(2, '0');
-    const d = String(startDate.getDate()).padStart(2, '0');
-    const startStr = `${y}-${m}-${d}`;
+    if (isCreating) return;
 
-    const targetDate = new Date(startDate);
-    targetDate.setDate(targetDate.getDate() + Number(formDays));
-    const ty = targetDate.getFullYear();
-    const tm = String(targetDate.getMonth() + 1).padStart(2, '0');
-    const td = String(targetDate.getDate()).padStart(2, '0');
-    const targetStr = `${ty}-${tm}-${td}`;
+    const parsedDays = parseInt(formDays, 10);
+    const parsedLimit = parseInt(formLimit, 10);
 
-    await create({
-      type: formType,
-      status: 'active',
-      productType: formProduct,
-      dailyLimit: formType === 'target' ? Number(formLimit) : undefined,
-      startDate: startStr,
-      targetDate: targetStr,
-      linkedLogIds: [],
-    });
-    await refreshAll();
-    setShowForm(false);
+    if (!Number.isFinite(parsedDays) || parsedDays <= 0) {
+      setFormError('Duration must be a positive number.');
+      return;
+    }
+    if (formType === 'target' && (!Number.isFinite(parsedLimit) || parsedLimit <= 0)) {
+      setFormError('Daily limit must be a positive number.');
+      return;
+    }
+
+    setFormError(null);
+    setIsCreating(true);
+    try {
+      const startDate = new Date();
+      const y = startDate.getFullYear();
+      const m = String(startDate.getMonth() + 1).padStart(2, '0');
+      const d = String(startDate.getDate()).padStart(2, '0');
+      const startStr = `${y}-${m}-${d}`;
+
+      const targetDate = new Date(startDate);
+      targetDate.setDate(targetDate.getDate() + parsedDays);
+      const ty = targetDate.getFullYear();
+      const tm = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const td = String(targetDate.getDate()).padStart(2, '0');
+      const targetStr = `${ty}-${tm}-${td}`;
+
+      await create({
+        type: formType,
+        status: 'active',
+        productType: formProduct,
+        dailyLimit: formType === 'target' ? parsedLimit : undefined,
+        startDate: startStr,
+        targetDate: targetStr,
+        linkedLogIds: [],
+      });
+      await refreshAll();
+      setShowForm(false);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleComplete = async (id: number) => {
@@ -58,6 +80,7 @@ export default function ChallengesPage() {
     await refreshAll();
   };
 
+  const pastChallenges = all.filter((c) => c.status !== 'active');
   const completedCount = all.filter((c) => c.status === 'completed').length;
   const failedCount = all.filter((c) => c.status === 'failed').length;
 
@@ -136,8 +159,12 @@ export default function ChallengesPage() {
               />
             </div>
 
+            {formError && <p className="text-sm text-red-500">{formError}</p>}
+
             <div className="flex gap-2">
-              <Button onClick={handleCreate}>Start Challenge</Button>
+              <Button onClick={handleCreate} disabled={isCreating}>
+                {isCreating ? 'Creating…' : 'Start Challenge'}
+              </Button>
               <Button variant="outline" onClick={() => setShowForm(false)}>
                 Cancel
               </Button>
@@ -170,7 +197,9 @@ export default function ChallengesPage() {
       {active.length === 0 && !showForm && (
         <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
           <Trophy className="mx-auto mb-3 h-8 w-8 text-zinc-400" />
-          <p className="text-sm text-zinc-500">No active challenges. Start one to track your progress!</p>
+          <p className="text-sm text-zinc-500">
+            No active challenges. Start one to track your progress!
+          </p>
         </div>
       )}
 
@@ -223,33 +252,29 @@ export default function ChallengesPage() {
         </div>
       )}
 
-      {all.filter((c) => c.status !== 'active').length > 0 && (
+      {pastChallenges.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">Past Challenges</h2>
-          {all
-            .filter((c) => c.status !== 'active')
-            .map((c) => {
-              const product = DEFAULT_PRODUCTS.find((p) => p.id === c.productType);
-              return (
-                <Card key={c.id} className="opacity-60">
-                  <CardContent className="flex items-center justify-between pt-6">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={c.status === 'completed' ? 'default' : 'destructive'}
-                      >
-                        {c.status === 'completed' ? 'Completed' : 'Failed'}
-                      </Badge>
-                      <span className={cn('font-medium', product?.color)}>
-                        {product?.name ?? c.productType}
-                      </span>
-                    </div>
-                    <span className="text-sm text-zinc-500">
-                      {c.startDate} → {c.targetDate ?? '—'}
+          {pastChallenges.map((c) => {
+            const product = DEFAULT_PRODUCTS.find((p) => p.id === c.productType);
+            return (
+              <Card key={c.id} className="opacity-60">
+                <CardContent className="flex items-center justify-between pt-6">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={c.status === 'completed' ? 'default' : 'destructive'}>
+                      {c.status === 'completed' ? 'Completed' : 'Failed'}
+                    </Badge>
+                    <span className={cn('font-medium', product?.color)}>
+                      {product?.name ?? c.productType}
                     </span>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                  </div>
+                  <span className="text-sm text-zinc-500">
+                    {c.startDate} → {c.targetDate ?? '—'}
+                  </span>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

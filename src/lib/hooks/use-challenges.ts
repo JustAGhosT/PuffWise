@@ -15,19 +15,23 @@ export function useActiveChallenges() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const data = await getActiveChallenges();
-    setChallenges(data);
-    setLoading(false);
+    try {
+      const data = await getActiveChallenges();
+      setChallenges(data);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    getActiveChallenges().then((data) => {
-      if (!cancelled) {
-        setChallenges(data);
-        setLoading(false);
-      }
-    });
+    getActiveChallenges()
+      .then((data) => {
+        if (!cancelled) setChallenges(data);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -65,19 +69,23 @@ export function useAllChallenges() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const data = await getAllChallenges();
-    setChallenges(data);
-    setLoading(false);
+    try {
+      const data = await getAllChallenges();
+      setChallenges(data);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    getAllChallenges().then((data) => {
-      if (!cancelled) {
-        setChallenges(data);
-        setLoading(false);
-      }
-    });
+    getAllChallenges()
+      .then((data) => {
+        if (!cancelled) setChallenges(data);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };

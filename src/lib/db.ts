@@ -89,11 +89,13 @@ export async function getChallengeById(id: number): Promise<Challenge | undefine
 }
 
 export async function completeChallenge(id: number): Promise<void> {
-  await db.challenges.update(id, { status: 'completed' });
+  const updated = await db.challenges.update(id, { status: 'completed' });
+  if (updated === 0) throw new Error(`Challenge ${id} not found`);
 }
 
 export async function failChallenge(id: number): Promise<void> {
-  await db.challenges.update(id, { status: 'failed' });
+  const updated = await db.challenges.update(id, { status: 'failed' });
+  if (updated === 0) throw new Error(`Challenge ${id} not found`);
 }
 
 export async function getAllChallenges(): Promise<Challenge[]> {

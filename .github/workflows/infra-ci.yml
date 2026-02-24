@@ -43,7 +43,12 @@ jobs:
             CHANGED=$(git diff --name-only origin/main...HEAD -- infra/ | grep -oP 'terragrunt/\K(dev|staging|prod)' | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
           fi
           # If root terraform modules changed, all envs are affected
-          if git diff --name-only HEAD~1 HEAD -- infra/terraform/ 2>/dev/null | grep -q .; then
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TF_DIFF=$(git diff --name-only HEAD~1 HEAD -- infra/terraform/ 2>/dev/null)
+          else
+            TF_DIFF=$(git diff --name-only origin/main...HEAD -- infra/terraform/ 2>/dev/null)
+          fi
+          if echo "$TF_DIFF" | grep -q .; then
             CHANGED='["dev","staging","prod"]'
           fi
           echo "envs=${CHANGED:-[]}" >> "$GITHUB_OUTPUT"

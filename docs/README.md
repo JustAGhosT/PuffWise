@@ -23,8 +23,8 @@ documentation category maintained by this repository.
 ## Quick Links
 
 - [Product Requirements](./01_product/01_product_requirements.md)
-- [Functional Spec](./01_product/02_functional_spec.md)
-- [Technical Spec](./01_product/04_technical_spec.md)
+- [Functional Spec](./02_specs/01_functional_spec.md)
+- [Technical Spec](./02_specs/02_technical_spec.md)
 - [Roadmap](./01_product/03_roadmap.md)
 
 ## Conventions

@@ -7,6 +7,7 @@ terraform {
 }
 
 inputs = {
-  swa_sku_tier = "Free"
-  swa_sku_size = "Free"
+  subscription_id = get_env("ARM_SUBSCRIPTION_ID", "")
+  swa_sku_tier    = "Free"
+  swa_sku_size    = "Free"
 }

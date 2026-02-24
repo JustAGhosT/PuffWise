@@ -92,14 +92,23 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
-            Download all your usage data as a JSON file. Data never leaves your device unless you
-            choose to export it.
+            Download all your usage data as a JSON or CSV file. Data never leaves your device unless
+            you choose to export it.
           </p>
           <div className="flex gap-2">
             <Button onClick={handleExport} variant="outline">
               Export JSON
             </Button>
-            <Button onClick={exportLogsToCSV} variant="outline">
+            <Button
+              onClick={async () => {
+                try {
+                  await exportLogsToCSV();
+                } catch (err) {
+                  console.error('CSV export failed', err);
+                }
+              }}
+              variant="outline"
+            >
               Export CSV
             </Button>
           </div>

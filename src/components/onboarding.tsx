@@ -5,20 +5,42 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DEFAULT_PRODUCTS } from '@/lib/products';
 import { cn } from '@/lib/utils';
 import { ArrowRight, Flame } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 
 const ONBOARDING_KEY = 'puffwise-onboarded';
+const ONBOARDING_SELECTIONS_KEY = 'puffwise-onboarding-selections';
+
+function subscribeToStorage(callback: () => void) {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+}
+
+function getOnboardedSnapshot(): boolean {
+  return localStorage.getItem(ONBOARDING_KEY) !== null;
+}
+
+function getOnboardedServerSnapshot(): boolean {
+  return true;
+}
 
 export function Onboarding() {
-  const [visible, setVisible] = useState(
-    () => typeof window !== 'undefined' && !localStorage.getItem(ONBOARDING_KEY)
+  const isOnboarded = useSyncExternalStore(
+    subscribeToStorage,
+    getOnboardedSnapshot,
+    getOnboardedServerSnapshot
   );
+  const [dismissed, setDismissed] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const dismiss = () => {
+    if (selected.size > 0) {
+      localStorage.setItem(ONBOARDING_SELECTIONS_KEY, JSON.stringify([...selected]));
+    }
     localStorage.setItem(ONBOARDING_KEY, '1');
-    setVisible(false);
+    setDismissed(true);
   };
+
+  if (isOnboarded || dismissed) return null;
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -28,8 +50,6 @@ export function Onboarding() {
       return next;
     });
   };
-
-  if (!visible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">

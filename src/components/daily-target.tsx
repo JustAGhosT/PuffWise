@@ -1,10 +1,10 @@
 'use client';
 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Challenge, LogEvent } from '@/lib/db';
 import { getProductById } from '@/lib/products';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Target } from 'lucide-react';
 
 interface DailyTargetProps {
   challenges: Challenge[];
@@ -33,7 +33,8 @@ export function DailyTarget({ challenges, todayLogs }: DailyTargetProps) {
             .filter((l) => l.productType === challenge.productType)
             .reduce((sum, l) => sum + l.amount, 0);
           const limit = challenge.dailyLimit!;
-          const pct = Math.min((todayCount / limit) * 100, 100);
+          const pct =
+            limit > 0 ? Math.min((todayCount / limit) * 100, 100) : todayCount > 0 ? 100 : 0;
           const over = todayCount > limit;
 
           return (
