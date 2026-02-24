@@ -27,7 +27,7 @@ git clone https://github.com/JustAGhosT/PuffWise.git
 cd PuffWise
 
 # AgentKit tooling (the app scaffold is not yet created)
-cd agentkit
+cd .agentkit
 pnpm install
 pnpm test
 ```
@@ -41,7 +41,7 @@ pnpm test
 
 ```text
 PuffWise/
-├── agentkit/            # AgentKit Forge engine + CLI
+├── .agentkit/           # AgentKit Forge engine + CLI
 │   ├── bin/             # Cross-platform CLI scripts
 │   ├── engines/node/    # Sync engine, orchestrator, runners
 │   └── spec/            # YAML spec files (agents, commands, teams)
@@ -53,8 +53,8 @@ PuffWise/
 ## Documentation
 
 - [Product Requirements Document](docs/01_product/01_product_requirements.md)
-- [AgentKit Architecture](agentkit/docs/ARCHITECTURE.md)
-- [CLI Installation](agentkit/docs/CLI_INSTALLATION.md)
+- [AgentKit Architecture](.agentkit/docs/ARCHITECTURE.md)
+- [CLI Installation](.agentkit/docs/CLI_INSTALLATION.md)
 
 ## Tech Stack (Planned)
 
@@ -65,7 +65,7 @@ PuffWise/
 ## Contributing
 
 1. Fork the repo and create a feature branch
-2. Make changes and ensure `pnpm test` passes in `agentkit/`
+2. Make changes and ensure `pnpm test` passes in `.agentkit/`
 3. Open a PR against `main`
 
 ## License
