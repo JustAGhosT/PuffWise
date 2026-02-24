@@ -112,7 +112,8 @@ jobs:
           done
 
           # Check for .env file commits
-          if git diff --cached --name-only 2>/dev/null | grep -qE '\.env($|\.)'; then
+          if git diff HEAD --name-only 2>/dev/null | grep -qE '\.env($|\.)' || \
+             git ls-files --others --exclude-standard 2>/dev/null | grep -qE '\.env($|\.)'; then
             echo "::error::.env file detected in staged changes"
             errors=$((errors + 1))
           fi
