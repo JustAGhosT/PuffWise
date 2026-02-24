@@ -5,12 +5,14 @@ IaC for PuffWise using Terraform + Terragrunt + Terrateam on Azure.
 ## Architecture
 
 ```text
-Azure
-├── Resource Group (rg-puffwise-{env})
-│   └── Static Web App (swa-puffwise-{env})
+Azure (southafricanorth)
+├── nl-{env}-puffwise-rg-san     (Resource Group)
+│   └── nl-{env}-puffwise-swa-san (Static Web App, hosted in westeurope*)
 │       ├── Custom domain (prod only, optional)
 │       └── Managed identity (prod only)
-└── [Future] Azure Functions / Container Apps
+└── [Future] nl-{env}-puffwise-func-san (Azure Functions / Container Apps)
+
+* SWA does not yet support southafricanorth; deployed to westeurope.
 ```
 
 ## Directory Structure
@@ -39,21 +41,21 @@ infra/
    OIDC federated credential
 2. **Terraform state storage** — create before first run:
    ```bash
-   az group create -n rg-puffwise-tfstate -l westeurope
-   az storage account create -n stpuffwisetfstate -g rg-puffwise-tfstate \
-     -l westeurope --sku Standard_LRS
+   az group create -n nl-shared-puffwise-rg-san -l southafricanorth
+   az storage account create -n nlsharedpuffwisestsan \
+     -g nl-shared-puffwise-rg-san -l southafricanorth --sku Standard_LRS
    az storage container create -n tfstate \
-     --account-name stpuffwisetfstate
+     --account-name nlsharedpuffwisestsan
    ```
 3. **Terragrunt** >= 0.68 and **Terraform** >= 1.6
 
 ## Required GitHub Secrets
 
-| Secret | Description |
-|--------|-------------|
-| `AZURE_CLIENT_ID` | Service principal / OIDC app client ID |
-| `AZURE_TENANT_ID` | Azure AD tenant ID |
-| `AZURE_SUBSCRIPTION_ID` | Target Azure subscription |
+| Secret                            | Description                                                     |
+| --------------------------------- | --------------------------------------------------------------- |
+| `AZURE_CLIENT_ID`                 | Service principal / OIDC app client ID                          |
+| `AZURE_TENANT_ID`                 | Azure AD tenant ID                                              |
+| `AZURE_SUBSCRIPTION_ID`           | Target Azure subscription                                       |
 | `AZURE_STATIC_WEB_APPS_API_TOKEN` | SWA deployment token (from `terraform output -raw swa_api_key`) |
 
 Set these per environment in **Settings → Environments → {dev,staging,prod}**.
@@ -84,8 +86,8 @@ terragrunt apply
 
 ## Environments
 
-| Env | SWA SKU | Managed Identity | Custom Domain |
-|-----|---------|-----------------|---------------|
-| dev | Free | No | No |
-| staging | Free | No | No |
-| prod | Standard | Yes | Configurable |
+| Env     | SWA SKU  | Managed Identity | Custom Domain |
+| ------- | -------- | ---------------- | ------------- |
+| dev     | Free     | No               | No            |
+| staging | Free     | No               | No            |
+| prod    | Standard | Yes              | Configurable  |

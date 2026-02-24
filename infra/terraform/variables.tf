@@ -17,11 +17,17 @@ variable "environment" {
 variable "location" {
   description = "Azure region for the resource group"
   type        = string
-  default     = "westeurope"
+  default     = "southafricanorth"
+}
+
+variable "region_short" {
+  description = "Short region code used in naming convention (e.g. san, weu, eus2)"
+  type        = string
+  default     = "san"
 }
 
 variable "swa_location" {
-  description = "Azure region for Static Web App (limited regions: centralus, eastus2, eastasia, westeurope, westus2)"
+  description = "Azure region for Static Web App (limited: centralus, eastus2, eastasia, westeurope, westus2). SWA does not yet support southafricanorth."
   type        = string
   default     = "westeurope"
 }

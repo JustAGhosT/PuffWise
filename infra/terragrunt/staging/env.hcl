@@ -1,4 +1,4 @@
 locals {
   environment = "staging"
-  location    = "westeurope"
+  location    = "southafricanorth"
 }

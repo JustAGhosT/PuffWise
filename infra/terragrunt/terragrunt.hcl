@@ -16,8 +16,8 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    resource_group_name  = "rg-puffwise-tfstate"
-    storage_account_name = "stpuffwisetfstate"
+    resource_group_name  = "nl-shared-puffwise-rg-san"
+    storage_account_name = "nlsharedpuffwisestsan"
     container_name       = "tfstate"
     key                  = "${local.environment}/terraform.tfstate"
   }

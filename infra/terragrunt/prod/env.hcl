@@ -1,4 +1,4 @@
 locals {
   environment = "prod"
-  location    = "westeurope"
+  location    = "southafricanorth"
 }
