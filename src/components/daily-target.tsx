@@ -53,9 +53,9 @@ export function DailyTarget({ challenges, todayLogs }: DailyTargetProps) {
                     'h-full rounded-full transition-all',
                     over ? 'bg-red-500' : percentage > 75 ? 'bg-amber-500' : 'bg-emerald-500'
                   )}
-                  style={{ width: `${pct}%` }}
+                  style={{ width: `${percentage}%` }}
                   role="progressbar"
-                  aria-valuenow={Math.round(pct)}
+                  aria-valuenow={Math.round(percentage)}
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-label={`${product?.name ?? challenge.productType}: ${todayCount} of ${limit}`}
