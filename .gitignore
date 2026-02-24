@@ -74,6 +74,10 @@ out/
 build/
 dist/
 coverage/
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+*.pem
 
 # =============================================================================
 # Environment

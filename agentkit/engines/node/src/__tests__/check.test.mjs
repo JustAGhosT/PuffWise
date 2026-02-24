@@ -1,18 +1,33 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { runCheck } from '../check.mjs';
-import { resolve, dirname } from 'path';
+import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { runCheck } from '../check.mjs';
+import * as orchestrator from '../orchestrator.mjs';
+import * as runner from '../runner.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const AGENTKIT_ROOT = resolve(__dirname, '..', '..', '..', '..');
 const PROJECT_ROOT = resolve(AGENTKIT_ROOT, '..');
 
 describe('runCheck()', () => {
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns a structured result object', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    // Mock process spawns to avoid Windows shell:true timeouts.
+    vi.spyOn(runner, 'commandExists').mockReturnValue(true);
+    vi.spyOn(runner, 'execCommand').mockReturnValue({
+      exitCode: 0,
+      stdout: 'ok\n',
+      stderr: '',
+      durationMs: 5,
+    });
+    vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
 
     const result = await runCheck({
       agentkitRoot: AGENTKIT_ROOT,
@@ -29,7 +44,18 @@ describe('runCheck()', () => {
 
   it('respects --fast flag structure', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    // Mock process spawns to avoid Windows shell:true timeouts.
+    vi.spyOn(runner, 'commandExists').mockReturnValue(true);
+    vi.spyOn(runner, 'execCommand').mockReturnValue({
+      exitCode: 0,
+      stdout: 'ok\n',
+      stderr: '',
+      durationMs: 5,
+    });
+    vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
 
     const result = await runCheck({
       agentkitRoot: AGENTKIT_ROOT,
@@ -39,7 +65,7 @@ describe('runCheck()', () => {
 
     // With --fast, build step should be skipped
     for (const stackResult of result.stacks) {
-      const buildStep = stackResult.steps.find(s => s.step === 'build');
+      const buildStep = stackResult.steps.find((s) => s.step === 'build');
       expect(buildStep).toBeUndefined();
     }
   });
