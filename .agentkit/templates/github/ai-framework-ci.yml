@@ -40,7 +40,7 @@ jobs:
           echo "=== Validating JSON files ==="
           errors=0
           for f in $(find . -name '*.json' -not -path './node_modules/*' -not -path './.git/*'); do
-            if ! python3 -c "import json; json.loads(open('$f').read())" 2>/dev/null; then
+            if ! python3 -c "import json,sys; json.loads(open(sys.argv[1]).read())" "$f" 2>/dev/null; then
               echo "FAIL: $f is not valid JSON"
               errors=$((errors + 1))
             else
@@ -73,7 +73,7 @@ jobs:
             fi
           done
           if [ "$missing" -gt 0 ]; then
-            echo "::warning::$missing required command(s) not found. Run 'agentkit init' to generate them."
+            echo "::warning::$missing required command(s) not found. Run '.agentkit init' to generate them."
           fi
 
       - name: Check hooks exist
@@ -131,12 +131,12 @@ jobs:
             if [ -f "$doc" ]; then
               echo "OK:   $doc exists"
             else
-              echo "::warning::$doc not found. Run 'agentkit init' to generate it."
+              echo "::warning::$doc not found. Run '.agentkit init' to generate it."
             fi
           done
 
           # Check for agent configuration directories
-          for dir in .cursor .windsurf .ai agentkit; do
+          for dir in .cursor .windsurf .ai .agentkit; do
             if [ -d "$dir" ]; then
               echo "OK:   $dir/ directory exists"
             else

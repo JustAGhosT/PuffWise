@@ -158,6 +158,29 @@ const settingsSchema = {
 };
 
 // ---------------------------------------------------------------------------
+// Schema: docs.yaml
+// ---------------------------------------------------------------------------
+const docCategorySchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', required: true, minLength: 1 },
+    name: { type: 'string', required: true, minLength: 1 },
+    path: { type: 'string', required: true },
+    description: { type: 'string', required: true },
+  },
+};
+
+const docSpecialDirSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', required: true, minLength: 1 },
+    name: { type: 'string', required: true, minLength: 1 },
+    path: { type: 'string', required: true },
+    description: { type: 'string', required: true },
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Cross-spec validation
 // ---------------------------------------------------------------------------
 
@@ -353,6 +376,36 @@ export function validateSpec(agentkitRoot) {
         if (!commandNames.has(baseTarget)) {
           warnings.push(
             `aliases.yaml: alias "${alias}" targets "${baseTarget}" which is not a known command`
+          );
+        }
+      }
+    }
+  }
+
+  // Validate docs.yaml
+  if (docs) {
+    if (docs.categories) {
+      if (!Array.isArray(docs.categories)) {
+        errors.push('docs.yaml: "categories" must be an array');
+      } else {
+        for (let i = 0; i < docs.categories.length; i++) {
+          errors.push(
+            ...validate(docs.categories[i], docCategorySchema, `docs.yaml.categories[${i}]`)
+          );
+        }
+      }
+    }
+    if (docs.specialDirectories) {
+      if (!Array.isArray(docs.specialDirectories)) {
+        errors.push('docs.yaml: "specialDirectories" must be an array');
+      } else {
+        for (let i = 0; i < docs.specialDirectories.length; i++) {
+          errors.push(
+            ...validate(
+              docs.specialDirectories[i],
+              docSpecialDirSchema,
+              `docs.yaml.specialDirectories[${i}]`
+            )
           );
         }
       }

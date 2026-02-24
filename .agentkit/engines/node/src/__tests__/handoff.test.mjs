@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -173,7 +173,6 @@ describe('runHandoff()', () => {
     expect(existsSync(handoffDir)).toBe(true);
 
     // There should be a handoff file
-    const { readdirSync } = await import('fs');
     const files = readdirSync(handoffDir);
     expect(files.length).toBe(1);
     expect(files[0]).toMatch(/^handoff-.*\.md$/);
