@@ -15,9 +15,12 @@ export function useActiveChallenges() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await getActiveChallenges();
       setChallenges(data);
+    } catch (err) {
+      console.error('Failed to load active challenges', err);
     } finally {
       setLoading(false);
     }
@@ -25,17 +28,13 @@ export function useActiveChallenges() {
 
   useEffect(() => {
     let cancelled = false;
-    getActiveChallenges()
-      .then((data) => {
-        if (!cancelled) setChallenges(data);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    refresh().then(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refresh]);
 
   const create = useCallback(
     async (challenge: Omit<Challenge, 'id'>) => {
@@ -69,9 +68,12 @@ export function useAllChallenges() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await getAllChallenges();
       setChallenges(data);
+    } catch (err) {
+      console.error('Failed to load all challenges', err);
     } finally {
       setLoading(false);
     }
@@ -79,17 +81,13 @@ export function useAllChallenges() {
 
   useEffect(() => {
     let cancelled = false;
-    getAllChallenges()
-      .then((data) => {
-        if (!cancelled) setChallenges(data);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    refresh().then(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refresh]);
 
   return { challenges, loading, refresh };
 }

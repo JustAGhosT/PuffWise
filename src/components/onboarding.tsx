@@ -68,7 +68,9 @@ export function Onboarding() {
               {DEFAULT_PRODUCTS.map((p) => (
                 <button
                   key={p.id}
+                  type="button"
                   onClick={() => toggle(p.id)}
+                  aria-pressed={selected.has(p.id)}
                   className={cn(
                     'rounded-lg border p-3 text-left text-sm transition-colors',
                     selected.has(p.id)

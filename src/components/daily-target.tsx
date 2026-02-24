@@ -13,7 +13,7 @@ interface DailyTargetProps {
 
 export function DailyTarget({ challenges, todayLogs }: DailyTargetProps) {
   const targetChallenges = challenges.filter(
-    (c) => c.type === 'target' && c.dailyLimit != null && c.productType
+    (c) => c.type === 'target' && c.dailyLimit != null && c.productType && c.status === 'active'
   );
 
   if (targetChallenges.length === 0) return null;
@@ -27,7 +27,7 @@ export function DailyTarget({ challenges, todayLogs }: DailyTargetProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {targetChallenges.map((challenge) => {
+        {targetChallenges.map((challenge, index) => {
           const product = getProductById(challenge.productType!);
           const todayCount = todayLogs
             .filter((l) => l.productType === challenge.productType)
@@ -38,7 +38,7 @@ export function DailyTarget({ challenges, todayLogs }: DailyTargetProps) {
           const over = todayCount > limit;
 
           return (
-            <div key={challenge.id} className="space-y-1">
+            <div key={challenge.id ?? `challenge-${index}`} className="space-y-1">
               <div className="flex items-center justify-between text-sm">
                 <span className={cn('font-medium', product?.color)}>
                   {product?.name ?? challenge.productType}
@@ -54,6 +54,11 @@ export function DailyTarget({ challenges, todayLogs }: DailyTargetProps) {
                     over ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : 'bg-emerald-500'
                   )}
                   style={{ width: `${pct}%` }}
+                  role="progressbar"
+                  aria-valuenow={Math.round(pct)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${product?.name ?? challenge.productType}: ${todayCount} of ${limit}`}
                 />
               </div>
             </div>
