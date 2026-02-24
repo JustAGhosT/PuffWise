@@ -104,7 +104,7 @@ jobs:
           script: |
             const { execSync } = require('child_process');
             const plan = execSync(
-              'cd infra/terragrunt/${{ matrix.env }} && terragrunt show -no-color tfplan',
+              'cd infra/terragrunt/${{ matrix.env }} && terraform show -no-color tfplan',
               { encoding: 'utf-8', maxBuffer: 1024 * 1024 }
             ).slice(0, 60000);
             await github.rest.issues.createComment({
