@@ -111,10 +111,9 @@ jobs:
             fi
           done
 
-          # Check for .env file commits
-          if git diff HEAD --name-only 2>/dev/null | grep -qE '\.env($|\.)' || \
-             git ls-files --others --exclude-standard 2>/dev/null | grep -qE '\.env($|\.)'; then
-            echo "::error::.env file detected in staged changes"
+          # Check for tracked .env files in the repository
+          if git ls-files '*.env' '.env*' 2>/dev/null | grep -qE '\.env($|\.)'; then
+            echo "::error::Tracked .env file detected in repository — remove it and add to .gitignore"
             errors=$((errors + 1))
           fi
 
