@@ -52,13 +52,18 @@ export function Onboarding() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="onboarding-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    >
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900">
             <Flame className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <CardTitle className="text-xl">Welcome to PuffWise</CardTitle>
+          <CardTitle id="onboarding-title" className="text-xl">Welcome to PuffWise</CardTitle>
           <p className="text-sm text-zinc-500">Track. Reduce. Challenge Yourself.</p>
         </CardHeader>
         <CardContent className="space-y-4">

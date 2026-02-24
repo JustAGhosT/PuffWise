@@ -2,6 +2,10 @@ import { getAllLogEvents } from './db';
 import { getProductById } from './products';
 
 function escapeCSV(value: string): string {
+  // Prevent CSV/formula injection: prefix cells starting with =, +, -, or @ with a single quote
+  if (/^[=+\-@]/.test(value)) {
+    value = "'" + value;
+  }
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
     return `"${value.replace(/"/g, '""')}"`;
   }

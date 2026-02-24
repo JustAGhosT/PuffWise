@@ -14,7 +14,7 @@ type ChallengeType = 'target' | 'streak';
 
 export default function ChallengesPage() {
   const { challenges: active, create, complete, fail } = useActiveChallenges();
-  const { challenges: all, refresh: refreshAll } = useAllChallenges();
+  const { challenges: all } = useAllChallenges();
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState<ChallengeType>('target');
   const [formProduct, setFormProduct] = useState(DEFAULT_PRODUCTS[0].id);
@@ -63,7 +63,6 @@ export default function ChallengesPage() {
         targetDate: targetStr,
         linkedLogIds: [],
       });
-      await refreshAll();
       setShowForm(false);
     } finally {
       setIsCreating(false);
@@ -72,12 +71,10 @@ export default function ChallengesPage() {
 
   const handleComplete = async (id: number) => {
     await complete(id);
-    await refreshAll();
   };
 
   const handleFail = async (id: number) => {
     await fail(id);
-    await refreshAll();
   };
 
   const pastChallenges = all.filter((c) => c.status !== 'active');
@@ -232,7 +229,8 @@ export default function ChallengesPage() {
                       size="sm"
                       variant="outline"
                       className="text-emerald-600"
-                      onClick={() => handleComplete(c.id!)}
+                      aria-label="Mark challenge complete"
+                      onClick={() => { if (c.id != null) handleComplete(c.id); }}
                     >
                       <Check className="h-4 w-4" />
                     </Button>
@@ -240,7 +238,8 @@ export default function ChallengesPage() {
                       size="sm"
                       variant="outline"
                       className="text-red-500"
-                      onClick={() => handleFail(c.id!)}
+                      aria-label="Mark challenge failed"
+                      onClick={() => { if (c.id != null) handleFail(c.id); }}
                     >
                       <X className="h-4 w-4" />
                     </Button>

@@ -33,7 +33,7 @@ export function DailyTarget({ challenges, todayLogs }: DailyTargetProps) {
             .filter((l) => l.productType === challenge.productType)
             .reduce((sum, l) => sum + l.amount, 0);
           const limit = challenge.dailyLimit!;
-          const pct =
+          const percentage =
             limit > 0 ? Math.min((todayCount / limit) * 100, 100) : todayCount > 0 ? 100 : 0;
           const over = todayCount > limit;
 
@@ -51,7 +51,7 @@ export function DailyTarget({ challenges, todayLogs }: DailyTargetProps) {
                 <div
                   className={cn(
                     'h-full rounded-full transition-all',
-                    over ? 'bg-red-500' : pct > 75 ? 'bg-amber-500' : 'bg-emerald-500'
+                    over ? 'bg-red-500' : percentage > 75 ? 'bg-amber-500' : 'bg-emerald-500'
                   )}
                   style={{ width: `${pct}%` }}
                   role="progressbar"

@@ -60,6 +60,12 @@ variable "custom_domain" {
   default     = null
 }
 
+variable "enable_managed_identity" {
+  description = "Whether to enable managed identity for the Static Web App"
+  type        = bool
+  default     = false
+}
+
 variable "extra_tags" {
   description = "Additional tags to apply to all resources"
   type        = map(string)
