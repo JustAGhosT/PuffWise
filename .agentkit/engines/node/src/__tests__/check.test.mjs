@@ -74,6 +74,16 @@ describe('runCheck()', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
 
+    // Mock process spawns to avoid Windows shell:true timeouts.
+    vi.spyOn(runner, 'commandExists').mockReturnValue(true);
+    vi.spyOn(runner, 'execCommand').mockReturnValue({
+      exitCode: 0,
+      stdout: 'ok\n',
+      stderr: '',
+      durationMs: 5,
+    });
+    vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
+
     const result = await runCheck({
       agentkitRoot: AGENTKIT_ROOT,
       projectRoot: PROJECT_ROOT,

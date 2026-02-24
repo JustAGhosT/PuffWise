@@ -158,6 +158,30 @@ const settingsSchema = {
 };
 
 // ---------------------------------------------------------------------------
+// Schema: aliases.yaml
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Schema: docs.yaml
+// ---------------------------------------------------------------------------
+const docsCategorySchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', required: true, minLength: 1 },
+    name: { type: 'string', required: true },
+    path: { type: 'string', required: true },
+    description: { type: 'string', required: true },
+  },
+};
+
+const docsSchema = {
+  type: 'object',
+  properties: {
+    categories: { type: 'array', required: true, items: docsCategorySchema },
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Cross-spec validation
 // ---------------------------------------------------------------------------
 
@@ -357,6 +381,11 @@ export function validateSpec(agentkitRoot) {
         }
       }
     }
+  }
+
+  // Validate docs.yaml
+  if (docs) {
+    errors.push(...validate(docs, docsSchema, 'docs.yaml'));
   }
 
   // Cross-spec validation
