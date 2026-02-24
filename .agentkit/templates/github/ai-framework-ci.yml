@@ -40,7 +40,7 @@ jobs:
           echo "=== Validating JSON files ==="
           errors=0
           for f in $(find . -name '*.json' -not -path './node_modules/*' -not -path './.git/*'); do
-            if ! python3 -m json.tool "$f" > /dev/null 2>&1; then
+            if ! python3 -c "import json,sys; json.loads(open(sys.argv[1]).read())" "$f" 2>/dev/null; then
               echo "FAIL: $f is not valid JSON"
               errors=$((errors + 1))
             else

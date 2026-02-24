@@ -6,11 +6,11 @@
 
 ## Prerequisites
 
-| Requirement | Minimum Version | Check Command |
-|-------------|-----------------|---------------|
+| Requirement | Minimum Version | Check Command    |
+| ----------- | --------------- | ---------------- |
 | Node.js     | 18+             | `node --version` |
 | pnpm        | 9+              | `pnpm --version` |
-| Git         | 2.30+           | `git --version` |
+| Git         | 2.30+           | `git --version`  |
 
 If you do not have pnpm installed, install it globally:
 
@@ -68,11 +68,11 @@ node .agentkit/engines/node/src/cli.mjs <command> [options]
 Several commands have shorthand scripts defined in `.agentkit/package.json`:
 
 ```bash
-pnpm -C agentkit agentkit:sync           # equivalent to: cli.mjs sync
-pnpm -C agentkit agentkit:init           # equivalent to: cli.mjs init
-pnpm -C agentkit agentkit:validate       # equivalent to: cli.mjs validate
-pnpm -C agentkit agentkit:discover       # equivalent to: cli.mjs discover
-pnpm -C agentkit agentkit:spec-validate  # equivalent to: cli.mjs spec-validate
+pnpm -C .agentkit agentkit:sync           # equivalent to: cli.mjs sync
+pnpm -C .agentkit agentkit:init           # equivalent to: cli.mjs init
+pnpm -C .agentkit agentkit:validate       # equivalent to: cli.mjs validate
+pnpm -C .agentkit agentkit:discover       # equivalent to: cli.mjs discover
+pnpm -C .agentkit agentkit:spec-validate  # equivalent to: cli.mjs spec-validate
 ```
 
 ### Flag syntax
@@ -104,30 +104,30 @@ DEBUG=1 node .agentkit/engines/node/src/cli.mjs sync
 
 ### Setup Commands
 
-| Command          | Purpose                                           |
-|------------------|---------------------------------------------------|
-| `init`           | Initialize a repo overlay from the template        |
-| `sync`           | Render all AI tool configs from spec and overlay   |
-| `validate`       | Validate generated outputs for correctness         |
-| `spec-validate`  | Validate YAML spec files against the schema        |
-| `discover`       | Scan the repo to detect tech stacks and structure  |
+| Command         | Purpose                                           |
+| --------------- | ------------------------------------------------- |
+| `init`          | Initialize a repo overlay from the template       |
+| `sync`          | Render all AI tool configs from spec and overlay  |
+| `validate`      | Validate generated outputs for correctness        |
+| `spec-validate` | Validate YAML spec files against the schema       |
+| `discover`      | Scan the repo to detect tech stacks and structure |
 
 ### Workflow Commands
 
-| Command          | Purpose                                           |
-|------------------|---------------------------------------------------|
-| `orchestrate`    | Multi-team coordination with state persistence     |
-| `plan`           | Structured implementation planning                 |
-| `check`          | Run quality gates (format, lint, typecheck, test)  |
-| `review`         | Automated code review (secrets, large files, TODOs)|
-| `handoff`        | Generate a session handoff document                |
-| `healthcheck`    | Pre-flight validation of repo health               |
+| Command       | Purpose                                             |
+| ------------- | --------------------------------------------------- |
+| `orchestrate` | Multi-team coordination with state persistence      |
+| `plan`        | Structured implementation planning                  |
+| `check`       | Run quality gates (format, lint, typecheck, test)   |
+| `review`      | Automated code review (secrets, large files, TODOs) |
+| `handoff`     | Generate a session handoff document                 |
+| `healthcheck` | Pre-flight validation of repo health                |
 
 ### Utility Commands
 
-| Command          | Purpose                                           |
-|------------------|---------------------------------------------------|
-| `cost`           | Session cost and usage tracking                    |
+| Command | Purpose                         |
+| ------- | ------------------------------- |
+| `cost`  | Session cost and usage tracking |
 
 Run any command with `--help` to see its specific flags.
 
@@ -139,7 +139,7 @@ Run any command with `--help` to see its specific flags.
 
 ```bash
 # 1. Install dependencies
-pnpm -C agentkit install
+pnpm -C .agentkit install
 
 # 2. Initialize for your repository
 node .agentkit/engines/node/src/cli.mjs init --repoName my-project
@@ -176,7 +176,7 @@ Add a validation step to your CI pipeline to ensure spec files and generated
 outputs stay consistent:
 
 ```bash
-pnpm -C agentkit install
+pnpm -C .agentkit install
 node .agentkit/engines/node/src/cli.mjs spec-validate
 node .agentkit/engines/node/src/cli.mjs validate
 node .agentkit/engines/node/src/cli.mjs check --bail
@@ -205,7 +205,7 @@ directly.
 Make sure you installed dependencies first:
 
 ```bash
-pnpm -C agentkit install
+pnpm -C .agentkit install
 ```
 
 If the error persists, verify your Node.js version is 18 or higher:

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Cigarette, CloudHail, Circle, Flame, Trash2 } from 'lucide-react';
-import { useAllLogs } from '@/lib/hooks/use-logs';
-import { getProductById, DEFAULT_PRODUCTS } from '@/lib/products';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAllLogs } from '@/lib/hooks/use-logs';
+import { DEFAULT_PRODUCTS, getProductById } from '@/lib/products';
 import { cn } from '@/lib/utils';
+import { Cigarette, Circle, CloudHail, Flame, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Cigarette,
@@ -15,6 +15,13 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Circle,
   Flame,
 };
+
+function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -32,7 +39,7 @@ export default function HistoryPage() {
   const filtered = filter ? logs.filter((l) => l.productType === filter) : logs;
 
   const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, log) => {
-    const date = log.timestamp.slice(0, 10);
+    const date = toLocalDateStr(new Date(log.timestamp));
     if (!acc[date]) acc[date] = [];
     acc[date].push(log);
     return acc;

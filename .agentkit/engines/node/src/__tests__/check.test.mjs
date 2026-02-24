@@ -72,6 +72,7 @@ describe('runCheck()', () => {
 
   it('handles --stack filter for unknown stacks gracefully', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
 
     // Mock process spawns to avoid Windows shell:true timeouts.

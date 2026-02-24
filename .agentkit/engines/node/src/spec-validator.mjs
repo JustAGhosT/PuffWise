@@ -158,26 +158,25 @@ const settingsSchema = {
 };
 
 // ---------------------------------------------------------------------------
-// Schema: aliases.yaml
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // Schema: docs.yaml
 // ---------------------------------------------------------------------------
-const docsCategorySchema = {
+const docCategorySchema = {
   type: 'object',
   properties: {
     id: { type: 'string', required: true, minLength: 1 },
-    name: { type: 'string', required: true },
+    name: { type: 'string', required: true, minLength: 1 },
     path: { type: 'string', required: true },
     description: { type: 'string', required: true },
   },
 };
 
-const docsSchema = {
+const docSpecialDirSchema = {
   type: 'object',
   properties: {
-    categories: { type: 'array', required: true, items: docsCategorySchema },
+    id: { type: 'string', required: true, minLength: 1 },
+    name: { type: 'string', required: true, minLength: 1 },
+    path: { type: 'string', required: true },
+    description: { type: 'string', required: true },
   },
 };
 
@@ -385,7 +384,32 @@ export function validateSpec(agentkitRoot) {
 
   // Validate docs.yaml
   if (docs) {
-    errors.push(...validate(docs, docsSchema, 'docs.yaml'));
+    if (docs.categories) {
+      if (!Array.isArray(docs.categories)) {
+        errors.push('docs.yaml: "categories" must be an array');
+      } else {
+        for (let i = 0; i < docs.categories.length; i++) {
+          errors.push(
+            ...validate(docs.categories[i], docCategorySchema, `docs.yaml.categories[${i}]`)
+          );
+        }
+      }
+    }
+    if (docs.specialDirectories) {
+      if (!Array.isArray(docs.specialDirectories)) {
+        errors.push('docs.yaml: "specialDirectories" must be an array');
+      } else {
+        for (let i = 0; i < docs.specialDirectories.length; i++) {
+          errors.push(
+            ...validate(
+              docs.specialDirectories[i],
+              docSpecialDirSchema,
+              `docs.yaml.specialDirectories[${i}]`
+            )
+          );
+        }
+      }
+    }
   }
 
   // Cross-spec validation

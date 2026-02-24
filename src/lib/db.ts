@@ -48,8 +48,8 @@ export async function addLogEvent(event: Omit<LogEvent, 'id'>): Promise<number> 
 }
 
 export async function getLogEventsForDate(date: string): Promise<LogEvent[]> {
-  const start = `${date}T00:00:00`;
-  const end = `${date}T23:59:59`;
+  const start = `${date}T00:00:00.000`;
+  const end = `${date}T23:59:59.999`;
   return db.logEvents.where('timestamp').between(start, end, true, true).toArray();
 }
 
@@ -57,8 +57,8 @@ export async function getLogEventsForRange(
   startDate: string,
   endDate: string
 ): Promise<LogEvent[]> {
-  const start = `${startDate}T00:00:00`;
-  const end = `${endDate}T23:59:59`;
+  const start = `${startDate}T00:00:00.000`;
+  const end = `${endDate}T23:59:59.999`;
   return db.logEvents.where('timestamp').between(start, end, true, true).toArray();
 }
 
