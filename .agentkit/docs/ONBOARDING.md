@@ -63,13 +63,13 @@ node agentkit-forge/.agentkit/engines/node/src/cli.mjs init
 **On Windows (PowerShell):**
 
 ```powershell
-node agentkit-forge\.agentkit\engines\node\src\cli.mjs init
+.\agentkit-forge\agentkit\bin\init.ps1
 ```
 
 **On Windows (Command Prompt):**
 
 ```cmd
-node agentkit-forge\.agentkit\engines\node\src\cli.mjs init
+agentkit-forge\agentkit\bin\init.cmd
 ```
 
 This command will:

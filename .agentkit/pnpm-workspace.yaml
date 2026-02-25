@@ -1,3 +1,0 @@
-# This file makes .agentkit/ an independent pnpm workspace root,
-# isolated from the parent repo's workspace.
-packages: []

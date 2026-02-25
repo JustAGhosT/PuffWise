@@ -14,12 +14,32 @@ import { appendEvent } from './orchestrator.mjs';
 // The /g flag is safe with String.prototype.match() which resets lastIndex.
 // ---------------------------------------------------------------------------
 
+// Note: patterns use /g so String.prototype.match() returns all occurrences.
+// If refactoring to use .exec()/.test(), create fresh RegExp instances per call
+// to avoid stale lastIndex across files.
 const SECRET_PATTERNS = [
   { name: 'AWS Key', pattern: /AKIA[0-9A-Z]{16}/g },
   { name: 'Private Key', pattern: /-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----/g },
   { name: 'Generic Secret', pattern: /(password|secret|api_key|apikey|token)\s*[:=]\s*['"][^'"]{8,}['"]/gi },
   { name: 'Connection String', pattern: /mongodb(\+srv)?:\/\/[^\s'"]+/g },
   { name: 'JWT', pattern: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g },
+];
+
+// Paths that commonly produce false positives in secret scanning, or that are
+// framework internals (.agentkit/) which should not be reported as app issues.
+const SKIP_SECRET_SCAN_PATHS = [
+  '/node_modules/',
+  '/vendor/',
+  '/third_party/',
+  '/.git/',
+  '/.agentkit/engines/',
+  '/.agentkit/templates/',
+];
+
+const SKIP_SECRET_SCAN_EXTENSIONS = [
+  '.lock',    // package-lock.json, yarn.lock, etc.
+  '.sum',     // go.sum
+  '.snap',    // jest snapshots
 ];
 
 // ---------------------------------------------------------------------------
@@ -70,6 +90,11 @@ function getChangedFiles(projectRoot, flags) {
 function scanSecrets(projectRoot, files) {
   const findings = [];
   for (const file of files) {
+    // Skip paths known to produce false positives (lockfiles, vendored code, etc.)
+    const normalised = '/' + file.replace(/\\/g, '/');
+    if (SKIP_SECRET_SCAN_PATHS.some(p => normalised.includes(p))) continue;
+    if (SKIP_SECRET_SCAN_EXTENSIONS.some(ext => normalised.endsWith(ext))) continue;
+
     const fullPath = resolve(projectRoot, file);
     if (!existsSync(fullPath)) continue;
 
@@ -121,11 +146,21 @@ function scanLargeFiles(projectRoot, files, threshold = 500_000) {
   return findings;
 }
 
+// Paths to skip during TODO scanning — agentkit framework internals should not
+// appear as tech debt in consuming repos.
+const SKIP_TODO_SCAN_PATHS = [
+  '/.agentkit/engines/',
+  '/.agentkit/templates/',
+];
+
 function scanTodos(projectRoot, files) {
   const findings = [];
   const todoPattern = /\b(TODO|FIXME|HACK|XXX|TEMP)\b.*$/gm;
 
   for (const file of files) {
+    const normalised = '/' + file.replace(/\\/g, '/');
+    if (SKIP_TODO_SCAN_PATHS.some(p => normalised.includes(p))) continue;
+
     const fullPath = resolve(projectRoot, file);
     if (!existsSync(fullPath)) continue;
 
@@ -146,7 +181,7 @@ function scanTodos(projectRoot, files) {
             severity: 'LOW',
             file,
             line: i + 1,
-            text: matches[0].trim().slice(0, 100),
+            text: matches[0].trim().length > 100 ? matches[0].trim().slice(0, 97) + '...' : matches[0].trim(),
           });
         }
       }
@@ -167,7 +202,7 @@ function scanTodos(projectRoot, files) {
  * @param {object} opts.flags - --range, --file
  * @returns {object}
  */
-export async function runReview({ agentkitRoot, projectRoot, flags = {} }) {
+export async function runReview({ agentkitRoot /* kept for interface compatibility with other runner functions */, projectRoot, flags = {} }) {
   console.log('[agentkit:review] Running automated review checks...');
   console.log('');
 
@@ -245,7 +280,7 @@ export async function runReview({ agentkitRoot, projectRoot, flags = {} }) {
       secretFindings: secrets.length,
       status,
     });
-  } catch { /* best-effort */ }
+  } catch (err) { console.warn(`[agentkit:review] Event logging failed: ${err?.message ?? String(err)}`); }
 
   return {
     files: changedFiles.length,

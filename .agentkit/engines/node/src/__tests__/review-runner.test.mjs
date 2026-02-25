@@ -1,28 +1,24 @@
-import { execSync } from 'child_process';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import * as orchestrator from '../orchestrator.mjs';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { runReview } from '../review-runner.mjs';
+import * as runner from '../runner.mjs';
+import * as orchestrator from '../orchestrator.mjs';
+import { mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEST_ROOT = resolve(__dirname, '..', '..', '..', '..', '..', '.test-review');
 const STATE_DIR = resolve(TEST_ROOT, '.claude', 'state');
 
 function setupTestRepo() {
-  if (existsSync(TEST_ROOT)) rmSync(TEST_ROOT, { recursive: true });
+  if (existsSync(TEST_ROOT)) rmSync(TEST_ROOT, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   mkdirSync(STATE_DIR, { recursive: true });
   writeFileSync(resolve(TEST_ROOT, '.agentkit-repo'), 'test-project', 'utf-8');
-  // Initialize a real git repo so git commands don't bubble up to parent
-  execSync('git init', { cwd: TEST_ROOT, stdio: 'pipe' });
-  execSync('git config user.email "test@test.com"', { cwd: TEST_ROOT, stdio: 'pipe' });
-  execSync('git config user.name "test"', { cwd: TEST_ROOT, stdio: 'pipe' });
-  execSync('git add -A && git commit --allow-empty -m "init"', { cwd: TEST_ROOT, stdio: 'pipe' });
+  mkdirSync(resolve(TEST_ROOT, '.git'), { recursive: true });
 }
 
 function teardownTestRepo() {
-  if (existsSync(TEST_ROOT)) rmSync(TEST_ROOT, { recursive: true });
+  if (existsSync(TEST_ROOT)) rmSync(TEST_ROOT, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
 }
 
 describe('review-runner', () => {
@@ -31,15 +27,22 @@ describe('review-runner', () => {
     vi.restoreAllMocks();
   });
 
+  // Mock git commands globally to avoid spawning real processes.
+  // Individual tests override via flags.file so getChangedFiles() returns
+  // the specific file without needing a real git repo.
+  function mockGitAndEvents() {
+    vi.spyOn(runner, 'execCommand').mockImplementation((cmd) => {
+      if (cmd.includes('git diff')) return { exitCode: 0, stdout: '', stderr: '', durationMs: 5 };
+      return { exitCode: 1, stdout: '', stderr: '', durationMs: 0 };
+    });
+    vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
+  }
+
   describe('secret scanning', () => {
     it('detects AWS access keys', async () => {
       setupTestRepo();
       // Create file with fake AWS key
-      writeFileSync(
-        resolve(TEST_ROOT, 'config.js'),
-        'const key = "AKIAIOSFODNN7EXAMPLE";',
-        'utf-8'
-      );
+      writeFileSync(resolve(TEST_ROOT, 'config.js'), 'const key = "AKIAIOSFODNN7EXAMPLE";', 'utf-8');
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -50,18 +53,12 @@ describe('review-runner', () => {
       });
 
       expect(result.secrets).toBeGreaterThan(0);
-      expect(result.findings.some((f) => f.type === 'secret' && f.pattern === 'AWS Key')).toBe(
-        true
-      );
+      expect(result.findings.some(f => f.type === 'secret' && f.pattern === 'AWS Key')).toBe(true);
     });
 
     it('detects private keys', async () => {
       setupTestRepo();
-      writeFileSync(
-        resolve(TEST_ROOT, 'key.pem'),
-        '-----BEGIN RSA PRIVATE KEY-----\nfake',
-        'utf-8'
-      );
+      writeFileSync(resolve(TEST_ROOT, 'key.pem'), '-----BEGIN RSA PRIVATE KEY-----\nfake', 'utf-8');
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -72,7 +69,7 @@ describe('review-runner', () => {
       });
 
       expect(result.secrets).toBeGreaterThan(0);
-      expect(result.findings.some((f) => f.pattern === 'Private Key')).toBe(true);
+      expect(result.findings.some(f => f.pattern === 'Private Key')).toBe(true);
     });
 
     it('passes clean files', async () => {
@@ -91,16 +88,112 @@ describe('review-runner', () => {
     });
   });
 
-  describe('path traversal protection', () => {
-    it('rejects --file paths outside project root', async () => {
-      // Lightweight setup — no git spawns needed since path validation
-      // happens before any git commands run.
-      if (existsSync(TEST_ROOT)) rmSync(TEST_ROOT, { recursive: true });
-      mkdirSync(STATE_DIR, { recursive: true });
-      writeFileSync(resolve(TEST_ROOT, '.agentkit-repo'), 'test-project', 'utf-8');
+  describe('secret scan skip logic', () => {
+    it('skips files inside node_modules/', async () => {
+      setupTestRepo();
+      // Place a fake AWS key inside a node_modules path
+      mkdirSync(resolve(TEST_ROOT, 'node_modules', 'some-pkg'), { recursive: true });
+      writeFileSync(
+        resolve(TEST_ROOT, 'node_modules', 'some-pkg', 'index.js'),
+        'const key = "AKIAIOSFODNN7EXAMPLE";',
+        'utf-8',
+      );
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
+
+      const result = await runReview({
+        agentkitRoot: resolve(__dirname, '..', '..', '..', '..'),
+        projectRoot: TEST_ROOT,
+        flags: { file: 'node_modules/some-pkg/index.js' },
+      });
+
+      // File should be skipped — no secret findings
+      expect(result.secrets).toBe(0);
+    });
+
+    it('skips .lock files', async () => {
+      setupTestRepo();
+      writeFileSync(
+        resolve(TEST_ROOT, 'yarn.lock'),
+        'const key = "AKIAIOSFODNN7EXAMPLE";',
+        'utf-8',
+      );
+
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const result = await runReview({
+        agentkitRoot: resolve(__dirname, '..', '..', '..', '..'),
+        projectRoot: TEST_ROOT,
+        flags: { file: 'yarn.lock' },
+      });
+
+      expect(result.secrets).toBe(0);
+    });
+
+    it('skips .snap files', async () => {
+      setupTestRepo();
+      writeFileSync(
+        resolve(TEST_ROOT, 'test.snap'),
+        'const key = "AKIAIOSFODNN7EXAMPLE";',
+        'utf-8',
+      );
+
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const result = await runReview({
+        agentkitRoot: resolve(__dirname, '..', '..', '..', '..'),
+        projectRoot: TEST_ROOT,
+        flags: { file: 'test.snap' },
+      });
+
+      expect(result.secrets).toBe(0);
+    });
+
+    it('skips .sum files', async () => {
+      setupTestRepo();
+      writeFileSync(
+        resolve(TEST_ROOT, 'go.sum'),
+        'const key = "AKIAIOSFODNN7EXAMPLE";',
+        'utf-8',
+      );
+
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const result = await runReview({
+        agentkitRoot: resolve(__dirname, '..', '..', '..', '..'),
+        projectRoot: TEST_ROOT,
+        flags: { file: 'go.sum' },
+      });
+
+      expect(result.secrets).toBe(0);
+    });
+
+    it('skips files inside vendor/', async () => {
+      setupTestRepo();
+      mkdirSync(resolve(TEST_ROOT, 'vendor', 'lib'), { recursive: true });
+      writeFileSync(
+        resolve(TEST_ROOT, 'vendor', 'lib', 'util.go'),
+        'const key = "AKIAIOSFODNN7EXAMPLE";',
+        'utf-8',
+      );
+
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const result = await runReview({
+        agentkitRoot: resolve(__dirname, '..', '..', '..', '..'),
+        projectRoot: TEST_ROOT,
+        flags: { file: 'vendor/lib/util.go' },
+      });
+
+      expect(result.secrets).toBe(0);
+    });
+  });
+
+  describe('path traversal protection', () => {
+    it('rejects --file paths outside project root', async () => {
+      setupTestRepo();
+
+      vi.spyOn(console, 'log').mockImplementation(() => {});
 
       await expect(
         runReview({
@@ -158,11 +251,12 @@ describe('review-runner', () => {
 
     it('accepts valid range notation', async () => {
       setupTestRepo();
+      mockGitAndEvents();
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      // This won't fail on range validation, but may fail on git (no real repo)
-      // The important thing is it doesn't throw "Invalid --range"
+      // Mock returns no files so the result is SKIP — the important thing
+      // is that it doesn't throw "Invalid --range"
       const result = await runReview({
         agentkitRoot: resolve(__dirname, '..', '..', '..', '..'),
         projectRoot: TEST_ROOT,
@@ -195,11 +289,7 @@ describe('review-runner', () => {
   describe('TODO scanning', () => {
     it('detects TODO comments', async () => {
       setupTestRepo();
-      writeFileSync(
-        resolve(TEST_ROOT, 'code.js'),
-        '// TODO: fix this\n// FIXME: broken\nconst x = 1;',
-        'utf-8'
-      );
+      writeFileSync(resolve(TEST_ROOT, 'code.js'), '// TODO: fix this\n// FIXME: broken\nconst x = 1;', 'utf-8');
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -216,10 +306,11 @@ describe('review-runner', () => {
   describe('result structure', () => {
     it('returns SKIP when no files found', async () => {
       setupTestRepo();
+      mockGitAndEvents();
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      // No changed files in a bare test dir
+      // No changed files — mock returns empty diff
       const result = await runReview({
         agentkitRoot: resolve(__dirname, '..', '..', '..', '..'),
         projectRoot: TEST_ROOT,

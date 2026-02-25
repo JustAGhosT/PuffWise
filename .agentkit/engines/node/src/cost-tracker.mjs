@@ -7,10 +7,33 @@
  * are not available. This tracks operational metrics (session duration, commands
  * run, files modified) which are useful for understanding usage patterns.
  */
-import { existsSync, readFileSync, writeFileSync, mkdirSync, appendFileSync, readdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, appendFileSync, readdirSync, renameSync } from 'fs';
 import { resolve, basename } from 'path';
 import { execSync } from 'child_process';
 import { formatTimestamp } from './runner.mjs';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse a period string like '7d', '30d', '365d' into a number of days.
+ * Accepts formats: '<number>d' for days, or a bare number (treated as days).
+ * Returns 7 as default for invalid input.
+ * @param {string} period
+ * @returns {number}
+ */
+function parsePeriodDays(period) {
+  if (typeof period === 'number') return period > 0 ? Math.floor(period) : 7;
+  if (typeof period !== 'string') return 7;
+  const match = /^(\d+)d?$/i.exec(period.trim());
+  if (!match) {
+    console.warn(`[agentkit:cost] Invalid period format "${period}", defaulting to 7d`);
+    return 7;
+  }
+  const days = parseInt(match[1], 10);
+  return days > 0 ? days : 7;
+}
 
 // ---------------------------------------------------------------------------
 // Path helpers
@@ -65,12 +88,12 @@ export function initSession({ agentkitRoot, projectRoot }) {
     branch = execSync('git rev-parse --abbrev-ref HEAD', {
       cwd: projectRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
-  } catch { /* fallback */ }
+  } catch { /* git not available — using default branch */ }
   try {
     user = execSync('git config user.email', {
       cwd: projectRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
     }).trim() || 'unknown';
-  } catch { /* fallback */ }
+  } catch { /* git not available — using default user */ }
 
   let repoName = basename(projectRoot);
   const markerPath = resolve(projectRoot, '.agentkit-repo');
@@ -141,7 +164,7 @@ export function endSession({ agentkitRoot, projectRoot, sessionId }) {
       cwd: projectRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
     });
     filesModified = result.trim().split('\n').filter(Boolean).length;
-  } catch { /* fallback */ }
+  } catch { /* git not available — filesModified stays 0 */ }
 
   session.endTime = now.toISOString();
   session.durationMs = now.getTime() - startTime.getTime();
@@ -159,6 +182,45 @@ export function endSession({ agentkitRoot, projectRoot, sessionId }) {
   });
 
   return session;
+}
+
+// ---------------------------------------------------------------------------
+// Command tracking
+// ---------------------------------------------------------------------------
+
+/**
+ * Record a command invocation on the most recent active session.
+ * @param {string} agentkitRoot
+ * @param {string} command - The command name (e.g. 'check', 'discover')
+ */
+export function recordCommand(agentkitRoot, command) {
+  const dir = sessionsDir(agentkitRoot);
+  if (!existsSync(dir)) return;
+
+  // Find the most recent active session file
+  const files = readdirSync(dir)
+    .filter(f => f.startsWith('session-') && f.endsWith('.json'))
+    .sort()
+    .reverse();
+
+  for (const file of files) {
+    try {
+      const filePath = resolve(dir, file);
+      const raw = readFileSync(filePath, 'utf-8');
+      const session = JSON.parse(raw);
+      if (session.status === 'active') {
+        session.commandsRun = session.commandsRun || [];
+        session.commandsRun.push({ command, timestamp: new Date().toISOString() });
+        // Atomic write: temp file + rename to prevent partial reads
+        const tmpPath = filePath + '.tmp';
+        writeFileSync(tmpPath, JSON.stringify(session, null, 2) + '\n', 'utf-8');
+        renameSync(tmpPath, filePath);
+
+        logEvent(agentkitRoot, { event: 'command_run', command, sessionId: session.sessionId });
+        return;
+      }
+    } catch { /* skip corrupted session files */ }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -200,7 +262,7 @@ export function getSessions(agentkitRoot, { last = '7d' } = {}) {
   const dir = sessionsDir(agentkitRoot);
   if (!existsSync(dir)) return [];
 
-  const days = parseInt(last) || 7;
+  const days = parsePeriodDays(last);
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
   const files = readdirSync(dir).filter(f => f.startsWith('session-') && f.endsWith('.json'));

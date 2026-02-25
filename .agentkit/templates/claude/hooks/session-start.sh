@@ -70,10 +70,10 @@ fi
 # ── Session cost tracking ───────────────────────────────────────────────
 # Write a session-start event to the JSONL usage log for cost tracking.
 AGENTKIT_ROOT=""
-if [[ -d "${CWD}/agentkit" ]]; then
-    AGENTKIT_ROOT="${CWD}/agentkit"
-elif [[ -d "${CWD}/../agentkit" ]]; then
-    AGENTKIT_ROOT="${CWD}/../agentkit"
+if [[ -d "${CWD}/.agentkit" ]]; then
+    AGENTKIT_ROOT="${CWD}/.agentkit"
+elif [[ -d "${CWD}/../.agentkit" ]]; then
+    AGENTKIT_ROOT="${CWD}/../.agentkit"
 fi
 
 if [[ -n "$AGENTKIT_ROOT" ]] && command -v node &>/dev/null; then
