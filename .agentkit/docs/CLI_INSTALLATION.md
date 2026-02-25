@@ -39,7 +39,7 @@ pnpm -C agentkit install
 ```
 
 This installs the Node.js dependencies (including `js-yaml`) required by the
-sync engine. The `-C agentkit` flag tells pnpm to run inside the `.agentkit/`
+sync engine. The `-C .agentkit` flag tells pnpm to run inside the `.agentkit/`
 directory.
 
 ### 3. Verify the installation

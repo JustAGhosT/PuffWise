@@ -1,23 +1,25 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  runCheck,
-  resolveFormatter,
-  resolveLinter,
+  ALLOWED_FORMATTER_BASES,
+  ALLOWED_LINTER_BASES,
+  ALLOWED_NPX_PACKAGES,
   isAllowedFormatter,
   isAllowedLinter,
-  ALLOWED_FORMATTER_BASES,
-  ALLOWED_NPX_PACKAGES,
-  ALLOWED_LINTER_BASES,
+  resolveFormatter,
+  resolveLinter,
+  runCheck,
 } from '../check.mjs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const AGENTKIT_ROOT = resolve(__dirname, '..', '..', '..', '..');
 const PROJECT_ROOT = resolve(AGENTKIT_ROOT, '..');
 
 describe('runCheck()', () => {
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns a structured result object', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -48,7 +50,7 @@ describe('runCheck()', () => {
 
     // With --fast, build step should be skipped
     for (const stackResult of result.stacks) {
-      const buildStep = stackResult.steps.find(s => s.step === 'build');
+      const buildStep = stackResult.steps.find((s) => s.step === 'build');
       expect(buildStep).toBeUndefined();
     }
   });
@@ -56,7 +58,6 @@ describe('runCheck()', () => {
   it('handles --stack filter for unknown stacks gracefully', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-
     const result = await runCheck({
       agentkitRoot: AGENTKIT_ROOT,
       projectRoot: PROJECT_ROOT,
@@ -114,20 +115,32 @@ describe('resolveLinter()', () => {
 
 describe('isAllowedFormatter()', () => {
   it('allows known formatter bases', () => {
-    expect(isAllowedFormatter({ cmd: 'black', check: 'black --check .', fix: 'black .' })).toBe(true);
+    expect(isAllowedFormatter({ cmd: 'black', check: 'black --check .', fix: 'black .' })).toBe(
+      true
+    );
     expect(isAllowedFormatter({ cmd: 'gofmt', check: 'gofmt -l .', fix: 'gofmt -w .' })).toBe(true);
   });
 
   it('allows npx with an allowed package', () => {
-    expect(isAllowedFormatter({ cmd: 'npx prettier', check: 'npx prettier --check .', fix: 'npx prettier --write .' })).toBe(true);
+    expect(
+      isAllowedFormatter({
+        cmd: 'npx prettier',
+        check: 'npx prettier --check .',
+        fix: 'npx prettier --write .',
+      })
+    ).toBe(true);
   });
 
   it('blocks npx with an unknown package', () => {
-    expect(isAllowedFormatter({ cmd: 'npx malicious-pkg', check: 'npx malicious-pkg .', fix: null })).toBe(false);
+    expect(
+      isAllowedFormatter({ cmd: 'npx malicious-pkg', check: 'npx malicious-pkg .', fix: null })
+    ).toBe(false);
   });
 
   it('blocks unknown formatter bases', () => {
-    expect(isAllowedFormatter({ cmd: 'arbitrary-bin', check: 'arbitrary-bin .', fix: null })).toBe(false);
+    expect(isAllowedFormatter({ cmd: 'arbitrary-bin', check: 'arbitrary-bin .', fix: null })).toBe(
+      false
+    );
   });
 
   it('exports ALLOWED_FORMATTER_BASES and ALLOWED_NPX_PACKAGES sets', () => {
@@ -144,8 +157,12 @@ describe('isAllowedLinter()', () => {
   });
 
   it('blocks unknown linter bases', () => {
-    expect(isAllowedLinter({ cmd: 'arbitrary-linter', check: 'arbitrary-linter .', fix: null })).toBe(false);
-    expect(isAllowedLinter({ cmd: 'npx malicious-linter', check: 'npx malicious-linter .', fix: null })).toBe(false);
+    expect(
+      isAllowedLinter({ cmd: 'arbitrary-linter', check: 'arbitrary-linter .', fix: null })
+    ).toBe(false);
+    expect(
+      isAllowedLinter({ cmd: 'npx malicious-linter', check: 'npx malicious-linter .', fix: null })
+    ).toBe(false);
   });
 
   it('exports ALLOWED_LINTER_BASES set', () => {

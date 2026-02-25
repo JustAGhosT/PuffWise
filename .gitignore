@@ -46,6 +46,7 @@ node_modules/
 .agentkit/logs/*
 !.agentkit/logs/.gitkeep
 .agentkit/node_modules/
+.agentkit/package-lock.json
 
 # Repo identity marker (created by init)
 .agentkit-repo
