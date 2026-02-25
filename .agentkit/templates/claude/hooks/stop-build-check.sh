@@ -131,10 +131,10 @@ fi
 
 # -- Session cost tracking: log session end --------------------------------
 AGENTKIT_ROOT=""
-if [[ -d "${CWD}/agentkit" ]]; then
-    AGENTKIT_ROOT="${CWD}/agentkit"
-elif [[ -d "${CWD}/../agentkit" ]]; then
-    AGENTKIT_ROOT="${CWD}/../agentkit"
+if [[ -d "${CWD}/.agentkit" ]]; then
+    AGENTKIT_ROOT="${CWD}/.agentkit"
+elif [[ -d "${CWD}/../.agentkit" ]]; then
+    AGENTKIT_ROOT="${CWD}/../.agentkit"
 fi
 
 if [[ -n "$AGENTKIT_ROOT" ]] && command -v jq &>/dev/null; then

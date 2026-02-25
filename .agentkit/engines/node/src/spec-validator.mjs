@@ -158,27 +158,297 @@ const settingsSchema = {
 };
 
 // ---------------------------------------------------------------------------
-// Schema: docs.yaml
+// Schema: project.yaml — enum value sets
 // ---------------------------------------------------------------------------
-const docCategorySchema = {
-  type: 'object',
-  properties: {
-    id: { type: 'string', required: true, minLength: 1 },
-    name: { type: 'string', required: true, minLength: 1 },
-    path: { type: 'string', required: true },
-    description: { type: 'string', required: true },
-  },
+const PROJECT_ENUMS = {
+  phase: ['greenfield', 'active', 'maintenance', 'legacy'],
+  architecturePattern: ['clean', 'hexagonal', 'mvc', 'microservices', 'monolith', 'serverless'],
+  apiStyle: ['rest', 'graphql', 'grpc', 'mixed'],
+  cloudProvider: ['aws', 'azure', 'gcp', 'vercel', 'netlify', 'self-hosted', 'none'],
+  iacTool: ['terraform', 'bicep', 'pulumi', 'cdk', 'terragrunt', 'none'],
+  branchStrategy: ['trunk-based', 'github-flow', 'gitflow'],
+  commitConvention: ['conventional', 'semantic', 'none'],
+  codeReview: ['required-pr', 'optional', 'none'],
+  teamSize: ['solo', 'small', 'medium', 'large'],
+  loggingFramework: [
+    'serilog',
+    'winston',
+    'pino',
+    'bunyan',
+    'python-logging',
+    'log4net',
+    'nlog',
+    'none',
+  ],
+  loggingLevel: ['trace', 'debug', 'information', 'warning', 'error', 'critical'],
+  errorStrategy: ['problem-details', 'custom-envelope', 'raw', 'none'],
+  authProvider: [
+    'azure-ad',
+    'azure-ad-b2c',
+    'auth0',
+    'firebase',
+    'cognito',
+    'keycloak',
+    'custom-jwt',
+    'none',
+  ],
+  authStrategy: ['jwt-bearer', 'cookie', 'session', 'api-key', 'oauth2-code'],
+  cachingProvider: ['redis', 'memcached', 'in-memory', 'none'],
+  apiVersioning: ['url-segment', 'header', 'query-string', 'media-type', 'none'],
+  apiPagination: ['cursor', 'offset', 'keyset', 'none'],
+  apiResponseFormat: ['envelope', 'raw', 'json-api', 'hal'],
+  dbMigrations: ['code-first', 'sql-scripts', 'auto', 'none'],
+  dbTransactionStrategy: ['unit-of-work', 'per-request', 'manual', 'none'],
+  featureFlagProvider: [
+    'launchdarkly',
+    'azure-app-config',
+    'unleash',
+    'flagsmith',
+    'custom',
+    'none',
+  ],
+  envConfigStrategy: ['env-vars', 'config-files', 'vault', 'app-config', 'none'],
+  monorepoTool: ['turborepo', 'nx', 'lerna', 'pnpm-workspaces'],
+  // Infrastructure
+  infraStateBackend: ['azurerm', 's3', 'gcs', 'consul', 'local', 'none'],
+  infraLockProvider: ['blob-lease', 'dynamodb', 'consul', 'none'],
+  // Observability
+  monitoringProvider: [
+    'azure-monitor',
+    'datadog',
+    'prometheus',
+    'grafana-cloud',
+    'cloudwatch',
+    'none',
+  ],
+  alertingProvider: ['azure-monitor', 'pagerduty', 'opsgenie', 'grafana', 'none'],
+  tracingProvider: ['application-insights', 'jaeger', 'zipkin', 'otel-collector', 'none'],
+  // Compliance
+  complianceFramework: ['soc2', 'iso27001', 'pci-dss', 'hipaa', 'gdpr', 'internal', 'none'],
+  backupSchedule: ['daily', 'weekly', 'continuous', 'none'],
+  auditEventBus: ['service-bus', 'event-hub', 'sns', 'none'],
 };
 
-const docSpecialDirSchema = {
-  type: 'object',
-  properties: {
-    id: { type: 'string', required: true, minLength: 1 },
-    name: { type: 'string', required: true, minLength: 1 },
-    path: { type: 'string', required: true },
-    description: { type: 'string', required: true },
-  },
-};
+/**
+ * Validates project.yaml against expected schema.
+ * All fields are optional — returns errors only for values that are present but invalid.
+ * @param {object} project - Parsed project.yaml content
+ * @returns {{ errors: string[], warnings: string[] }}
+ */
+function validateProjectYaml(project) {
+  const errors = [];
+  const warnings = [];
+  if (!project || typeof project !== 'object') return { errors, warnings };
+
+  // Helper: check enum value
+  function checkEnum(value, fieldPath, enumName) {
+    if (value === null || value === undefined || value === '') return;
+    const allowed = PROJECT_ENUMS[enumName];
+    if (!allowed.includes(value)) {
+      errors.push(
+        `project.yaml: ${fieldPath} must be one of [${allowed.join(', ')}], got "${value}"`
+      );
+    }
+  }
+
+  // Helper: check array of strings
+  function checkStringArray(value, fieldPath) {
+    if (value === null || value === undefined) return;
+    if (!Array.isArray(value)) {
+      errors.push(`project.yaml: ${fieldPath} must be an array`);
+    }
+  }
+
+  // Top-level
+  checkEnum(project.phase, 'phase', 'phase');
+
+  // Stack
+  const stack = project.stack;
+  if (stack && typeof stack === 'object') {
+    checkStringArray(stack.languages, 'stack.languages');
+    if (stack.frameworks && typeof stack.frameworks === 'object') {
+      checkStringArray(stack.frameworks.frontend, 'stack.frameworks.frontend');
+      checkStringArray(stack.frameworks.backend, 'stack.frameworks.backend');
+      checkStringArray(stack.frameworks.css, 'stack.frameworks.css');
+    }
+    checkStringArray(stack.database, 'stack.database');
+    checkStringArray(stack.messaging, 'stack.messaging');
+  }
+
+  // Architecture
+  const arch = project.architecture;
+  if (arch && typeof arch === 'object') {
+    checkEnum(arch.pattern, 'architecture.pattern', 'architecturePattern');
+    checkEnum(arch.apiStyle, 'architecture.apiStyle', 'apiStyle');
+    checkEnum(arch.monorepoTool, 'architecture.monorepoTool', 'monorepoTool');
+  }
+
+  // Deployment
+  const deploy = project.deployment;
+  if (deploy && typeof deploy === 'object') {
+    checkEnum(deploy.cloudProvider, 'deployment.cloudProvider', 'cloudProvider');
+    checkStringArray(deploy.environments, 'deployment.environments');
+    checkEnum(deploy.iacTool, 'deployment.iacTool', 'iacTool');
+  }
+
+  // Infrastructure
+  const infra = project.infrastructure;
+  if (infra && typeof infra === 'object') {
+    checkStringArray(infra.iacToolchain, 'infrastructure.iacToolchain');
+    checkEnum(infra.stateBackend, 'infrastructure.stateBackend', 'infraStateBackend');
+    checkEnum(infra.lockProvider, 'infrastructure.lockProvider', 'infraLockProvider');
+    if (infra.tagging && typeof infra.tagging === 'object') {
+      checkStringArray(infra.tagging.mandatory, 'infrastructure.tagging.mandatory');
+      checkStringArray(infra.tagging.optional, 'infrastructure.tagging.optional');
+    }
+  }
+
+  // Observability
+  const obs = project.observability;
+  if (obs && typeof obs === 'object') {
+    if (obs.monitoring && typeof obs.monitoring === 'object') {
+      checkEnum(obs.monitoring.provider, 'observability.monitoring.provider', 'monitoringProvider');
+    }
+    if (obs.alerting && typeof obs.alerting === 'object') {
+      checkEnum(obs.alerting.provider, 'observability.alerting.provider', 'alertingProvider');
+      checkStringArray(obs.alerting.channels, 'observability.alerting.channels');
+    }
+    if (obs.tracing && typeof obs.tracing === 'object') {
+      checkEnum(obs.tracing.provider, 'observability.tracing.provider', 'tracingProvider');
+      if (obs.tracing.samplingRate !== null && obs.tracing.samplingRate !== undefined) {
+        if (typeof obs.tracing.samplingRate !== 'number') {
+          errors.push('project.yaml: observability.tracing.samplingRate must be a number');
+        } else if (obs.tracing.samplingRate < 0 || obs.tracing.samplingRate > 1) {
+          errors.push(
+            `project.yaml: observability.tracing.samplingRate must be 0.0-1.0, got ${obs.tracing.samplingRate}`
+          );
+        }
+      }
+    }
+    if (obs.logging && typeof obs.logging === 'object') {
+      if (obs.logging.retentionDays !== null && obs.logging.retentionDays !== undefined) {
+        if (typeof obs.logging.retentionDays !== 'number') {
+          errors.push('project.yaml: observability.logging.retentionDays must be a number');
+        } else if (obs.logging.retentionDays < 1) {
+          errors.push(
+            `project.yaml: observability.logging.retentionDays must be >= 1, got ${obs.logging.retentionDays}`
+          );
+        }
+      }
+    }
+  }
+
+  // Compliance
+  const comp = project.compliance;
+  if (comp && typeof comp === 'object') {
+    checkEnum(comp.framework, 'compliance.framework', 'complianceFramework');
+    if (comp.disasterRecovery && typeof comp.disasterRecovery === 'object') {
+      const dr = comp.disasterRecovery;
+      if (dr.rpoHours !== null && dr.rpoHours !== undefined && typeof dr.rpoHours !== 'number') {
+        errors.push('project.yaml: compliance.disasterRecovery.rpoHours must be a number');
+      }
+      if (dr.rtoHours !== null && dr.rtoHours !== undefined && typeof dr.rtoHours !== 'number') {
+        errors.push('project.yaml: compliance.disasterRecovery.rtoHours must be a number');
+      }
+      checkEnum(dr.backupSchedule, 'compliance.disasterRecovery.backupSchedule', 'backupSchedule');
+    }
+    if (comp.audit && typeof comp.audit === 'object') {
+      checkEnum(comp.audit.eventBus, 'compliance.audit.eventBus', 'auditEventBus');
+    }
+  }
+
+  // Process
+  const proc = project.process;
+  if (proc && typeof proc === 'object') {
+    checkEnum(proc.branchStrategy, 'process.branchStrategy', 'branchStrategy');
+    checkEnum(proc.commitConvention, 'process.commitConvention', 'commitConvention');
+    checkEnum(proc.codeReview, 'process.codeReview', 'codeReview');
+    checkEnum(proc.teamSize, 'process.teamSize', 'teamSize');
+  }
+
+  // Testing
+  const testing = project.testing;
+  if (testing && typeof testing === 'object') {
+    checkStringArray(testing.unit, 'testing.unit');
+    checkStringArray(testing.integration, 'testing.integration');
+    checkStringArray(testing.e2e, 'testing.e2e');
+    if (testing.coverage !== null && testing.coverage !== undefined) {
+      if (typeof testing.coverage !== 'number') {
+        errors.push('project.yaml: testing.coverage must be a number');
+      } else if (testing.coverage < 0 || testing.coverage > 100) {
+        errors.push(`project.yaml: testing.coverage must be 0-100, got ${testing.coverage}`);
+      }
+    }
+  }
+
+  // Integrations
+  if (project.integrations !== null && project.integrations !== undefined) {
+    if (!Array.isArray(project.integrations)) {
+      errors.push('project.yaml: integrations must be an array');
+    } else {
+      for (let i = 0; i < project.integrations.length; i++) {
+        const integ = project.integrations[i];
+        if (!integ || typeof integ !== 'object') {
+          errors.push(`project.yaml: integrations[${i}] must be an object`);
+          continue;
+        }
+        if (!integ.name) errors.push(`project.yaml: integrations[${i}].name is required`);
+        if (!integ.purpose) errors.push(`project.yaml: integrations[${i}].purpose is required`);
+      }
+    }
+  }
+
+  // Cross-cutting concerns
+  const cc = project.crosscutting;
+  if (cc && typeof cc === 'object') {
+    if (cc.logging && typeof cc.logging === 'object') {
+      checkEnum(cc.logging.framework, 'crosscutting.logging.framework', 'loggingFramework');
+      checkEnum(cc.logging.level, 'crosscutting.logging.level', 'loggingLevel');
+      checkStringArray(cc.logging.sink, 'crosscutting.logging.sink');
+    }
+    if (cc.errorHandling && typeof cc.errorHandling === 'object') {
+      checkEnum(cc.errorHandling.strategy, 'crosscutting.errorHandling.strategy', 'errorStrategy');
+    }
+    if (cc.authentication && typeof cc.authentication === 'object') {
+      checkEnum(cc.authentication.provider, 'crosscutting.authentication.provider', 'authProvider');
+      checkEnum(cc.authentication.strategy, 'crosscutting.authentication.strategy', 'authStrategy');
+    }
+    if (cc.caching && typeof cc.caching === 'object') {
+      checkEnum(cc.caching.provider, 'crosscutting.caching.provider', 'cachingProvider');
+      checkStringArray(cc.caching.patterns, 'crosscutting.caching.patterns');
+    }
+    if (cc.api && typeof cc.api === 'object') {
+      checkEnum(cc.api.versioning, 'crosscutting.api.versioning', 'apiVersioning');
+      checkEnum(cc.api.pagination, 'crosscutting.api.pagination', 'apiPagination');
+      checkEnum(cc.api.responseFormat, 'crosscutting.api.responseFormat', 'apiResponseFormat');
+    }
+    if (cc.database && typeof cc.database === 'object') {
+      checkEnum(cc.database.migrations, 'crosscutting.database.migrations', 'dbMigrations');
+      checkEnum(
+        cc.database.transactionStrategy,
+        'crosscutting.database.transactionStrategy',
+        'dbTransactionStrategy'
+      );
+    }
+    if (cc.featureFlags && typeof cc.featureFlags === 'object') {
+      checkEnum(
+        cc.featureFlags.provider,
+        'crosscutting.featureFlags.provider',
+        'featureFlagProvider'
+      );
+    }
+    if (cc.environments && typeof cc.environments === 'object') {
+      checkStringArray(cc.environments.naming, 'crosscutting.environments.naming');
+      checkEnum(
+        cc.environments.configStrategy,
+        'crosscutting.environments.configStrategy',
+        'envConfigStrategy'
+      );
+    }
+  }
+
+  return { errors, warnings };
+}
 
 // ---------------------------------------------------------------------------
 // Cross-spec validation
@@ -294,6 +564,21 @@ export function validateSpec(agentkitRoot) {
   const aliases = loadYaml('aliases.yaml');
   const docs = loadYaml('docs.yaml');
 
+  // project.yaml is optional — only validate if present
+  const projectPath = resolve(specDir, 'project.yaml');
+  if (existsSync(projectPath)) {
+    try {
+      const project = yaml.load(readFileSync(projectPath, 'utf-8'));
+      if (project && typeof project === 'object') {
+        const projectResult = validateProjectYaml(project);
+        errors.push(...projectResult.errors);
+        warnings.push(...projectResult.warnings);
+      }
+    } catch (err) {
+      errors.push(`project.yaml: YAML parse error — ${err.message}`);
+    }
+  }
+
   // Validate teams.yaml
   if (teams) {
     if (!teams.teams || !Array.isArray(teams.teams)) {
@@ -382,36 +667,6 @@ export function validateSpec(agentkitRoot) {
     }
   }
 
-  // Validate docs.yaml
-  if (docs) {
-    if (docs.categories) {
-      if (!Array.isArray(docs.categories)) {
-        errors.push('docs.yaml: "categories" must be an array');
-      } else {
-        for (let i = 0; i < docs.categories.length; i++) {
-          errors.push(
-            ...validate(docs.categories[i], docCategorySchema, `docs.yaml.categories[${i}]`)
-          );
-        }
-      }
-    }
-    if (docs.specialDirectories) {
-      if (!Array.isArray(docs.specialDirectories)) {
-        errors.push('docs.yaml: "specialDirectories" must be an array');
-      } else {
-        for (let i = 0; i < docs.specialDirectories.length; i++) {
-          errors.push(
-            ...validate(
-              docs.specialDirectories[i],
-              docSpecialDirSchema,
-              `docs.yaml.specialDirectories[${i}]`
-            )
-          );
-        }
-      }
-    }
-  }
-
   // Cross-spec validation
   if (teams && commands && agents && rules) {
     errors.push(...validateCrossReferences({ teams, commands, agents, rules }));
@@ -450,4 +705,4 @@ export function runSpecValidation(agentkitRoot) {
 }
 
 // Export validate for testing
-export { validate, validateCrossReferences };
+export { PROJECT_ENUMS, validate, validateCrossReferences, validateProjectYaml };

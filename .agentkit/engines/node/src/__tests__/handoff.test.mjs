@@ -1,10 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { runHandoff } from '../handoff.mjs';
-import * as orchestrator from '../orchestrator.mjs';
 import * as runner from '../runner.mjs';
+import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const AGENTKIT_ROOT = resolve(__dirname, '..', '..', '..', '..');
@@ -43,26 +42,18 @@ function setupTestProject(stateOverrides = {}) {
   );
 }
 
-// Helper: mock git process spawns to avoid Windows shell:true timeouts.
-function mockGitSpawns() {
-  vi.spyOn(runner, 'execCommand').mockImplementation((cmd) => {
-    if (cmd.includes('rev-parse'))
-      return { exitCode: 0, stdout: 'main\n', stderr: '', durationMs: 5 };
-    if (cmd.includes('git log -1'))
-      return { exitCode: 0, stdout: 'abc1234 init\n', stderr: '', durationMs: 5 };
-    if (cmd.includes('git log -5'))
-      return { exitCode: 0, stdout: 'abc1234 init\n', stderr: '', durationMs: 5 };
-    if (cmd.includes('status --porcelain'))
-      return { exitCode: 0, stdout: '', stderr: '', durationMs: 5 };
-    if (cmd.includes('diff --stat')) return { exitCode: 0, stdout: '', stderr: '', durationMs: 5 };
-    return { exitCode: 0, stdout: '', stderr: '', durationMs: 5 };
-  });
-  vi.spyOn(orchestrator, 'appendEvent').mockImplementation(() => {});
-}
-
 describe('runHandoff()', () => {
   beforeEach(() => {
     setupTestProject();
+
+    // Mock git commands to avoid spawning real processes (slow on Windows with shell:true)
+    vi.spyOn(runner, 'execCommand').mockImplementation((cmd) => {
+      if (cmd.includes('rev-parse --abbrev-ref')) return { exitCode: 0, stdout: 'main\n', stderr: '', durationMs: 5 };
+      if (cmd.includes('git log')) return { exitCode: 0, stdout: 'abc1234 Initial commit\n', stderr: '', durationMs: 5 };
+      if (cmd.includes('git status --porcelain')) return { exitCode: 0, stdout: '', stderr: '', durationMs: 5 };
+      if (cmd.includes('git diff')) return { exitCode: 0, stdout: '', stderr: '', durationMs: 5 };
+      return { exitCode: 1, stdout: '', stderr: '', durationMs: 0 };
+    });
   });
 
   afterEach(() => {
@@ -72,7 +63,6 @@ describe('runHandoff()', () => {
 
   it('returns structured handoff result', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -92,7 +82,6 @@ describe('runHandoff()', () => {
 
   it('generates document with expected sections', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -109,7 +98,6 @@ describe('runHandoff()', () => {
 
   it('includes active team progress in document', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -126,7 +114,6 @@ describe('runHandoff()', () => {
 
   it('includes open todo items in document', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -147,7 +134,6 @@ describe('runHandoff()', () => {
     });
 
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    mockGitSpawns();
 
     const result = await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -161,7 +147,6 @@ describe('runHandoff()', () => {
 
   it('saves handoff file when --save flag is set', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    mockGitSpawns();
 
     await runHandoff({
       agentkitRoot: AGENTKIT_ROOT,
@@ -173,6 +158,7 @@ describe('runHandoff()', () => {
     expect(existsSync(handoffDir)).toBe(true);
 
     // There should be a handoff file
+    const { readdirSync } = await import('fs');
     const files = readdirSync(handoffDir);
     expect(files.length).toBe(1);
     expect(files[0]).toMatch(/^handoff-.*\.md$/);
